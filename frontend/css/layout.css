@@ -1,0 +1,168 @@
+/* ==========================================================================
+   LAYOUT — Estructura general de la página (mobile first)
+   Cabecera, navegación, rejillas del contenido y pie.
+   ========================================================================== */
+
+body {
+    font-family: var(--fuente-base);
+    font-size: var(--texto-md);
+    line-height: var(--interlineado);
+    color: var(--color-texto);
+    background-color: var(--color-fondo);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    /* Evita desbordes horizontales accidentales en pantallas pequeñas. */
+    overflow-x: hidden;
+}
+
+/* --- Enlace de salto al contenido (accesibilidad de teclado) --- */
+.salto-contenido {
+    position: absolute;
+    top: var(--espacio-2);
+    left: var(--espacio-2);
+    z-index: 100;
+    padding: var(--espacio-2) var(--espacio-4);
+    background-color: var(--color-primario);
+    color: var(--color-texto-inverso);
+    border-radius: var(--radio-sm);
+    text-decoration: none;
+    transform: translateY(-200%);
+    transition: transform var(--transicion);
+}
+
+/* Se usa :focus (y no :focus-visible) para que el enlace aparezca ante
+   cualquier forma de enfoque, incluido el foco movido por software. */
+.salto-contenido:focus {
+    transform: translateY(0);
+}
+
+/* --- Cabecera --- */
+.cabecera {
+    background-color: var(--color-superficie);
+    border-bottom: 1px solid var(--color-borde);
+    box-shadow: var(--sombra-1);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.cabecera__barra {
+    max-width: var(--ancho-contenido);
+    margin-inline: auto;
+    padding: var(--espacio-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+}
+
+.marca {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    font-size: var(--texto-lg);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.marca__icono {
+    flex: 0 0 auto;
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.selector-usuario {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--espacio-2);
+}
+
+.selector-usuario .campo {
+    flex: 1 1 8rem;
+    min-width: 7rem;
+}
+
+.selector-usuario .campo__ayuda {
+    flex: 1 1 100%;
+}
+
+/* --- Navegación principal --- */
+.navegacion {
+    border-top: 1px solid var(--color-borde);
+    background-color: var(--color-superficie-alt);
+}
+
+.navegacion__lista {
+    max-width: var(--ancho-contenido);
+    margin-inline: auto;
+    padding: var(--espacio-2) var(--espacio-3);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--espacio-2);
+}
+
+/* --- Contenido principal --- */
+.contenido {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: var(--ancho-contenido);
+    margin-inline: auto;
+    padding: var(--espacio-4);
+}
+
+.contenido:focus {
+    outline: none;
+}
+
+.vista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.vista > h2 {
+    font-size: var(--texto-2xl);
+    letter-spacing: -0.02em;
+}
+
+.vista__introduccion {
+    /* Se pega al h2 anterior anulando el gap de la vista. */
+    margin-top: calc(var(--espacio-4) * -1);
+    color: var(--color-texto-suave);
+    font-size: var(--texto-sm);
+    max-width: 60ch;
+}
+
+/* --- Rejillas reutilizables --- */
+.rejilla-indicadores {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--espacio-3);
+}
+
+.rejilla-doble {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--espacio-4);
+    align-items: start;
+}
+
+/* --- Pie --- */
+.pie {
+    margin-top: var(--espacio-6);
+    padding: var(--espacio-5) var(--espacio-4);
+    background-color: var(--color-superficie);
+    border-top: 1px solid var(--color-borde);
+    text-align: center;
+}
+
+.pie__texto {
+    font-size: var(--texto-sm);
+    color: var(--color-texto-suave);
+}
+
+.pie__texto--suave {
+    font-size: var(--texto-xs);
+    margin-top: var(--espacio-1);
+}

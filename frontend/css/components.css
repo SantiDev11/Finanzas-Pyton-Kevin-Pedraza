@@ -1,0 +1,666 @@
+/* ==========================================================================
+   COMPONENTS — Piezas reutilizables de la interfaz
+   Tarjetas, botones, formularios, tablas, indicadores, estados, diálogos.
+   ========================================================================== */
+
+/* --- Foco visible global --------------------------------------------------
+   Un único estilo de foco para todos los elementos interactivos. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-foco);
+    outline-offset: 2px;
+    border-radius: var(--radio-sm);
+}
+
+/* --- Tarjetas ------------------------------------------------------------- */
+.tarjeta {
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-1);
+    padding: var(--espacio-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+}
+
+.tarjeta__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+}
+
+.tarjeta__cabecera h3 {
+    font-size: var(--texto-lg);
+}
+
+.contador {
+    font-size: var(--texto-sm);
+    color: var(--color-texto-suave);
+}
+
+/* --- Botones -------------------------------------------------------------- */
+.boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    min-height: var(--altura-tactil);
+    padding: var(--espacio-2) var(--espacio-4);
+    border-radius: var(--radio-md);
+    border: 1px solid transparent;
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    text-align: center;
+    transition: background-color var(--transicion), border-color var(--transicion), color var(--transicion);
+}
+
+.boton:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.boton--primario {
+    background-color: var(--color-primario);
+    color: var(--color-texto-inverso);
+}
+
+.boton--primario:hover:not(:disabled) {
+    background-color: var(--color-primario-hover);
+}
+
+.boton--secundario {
+    background-color: var(--color-superficie);
+    border-color: var(--color-borde-fuerte);
+    color: var(--color-texto);
+}
+
+.boton--secundario:hover:not(:disabled) {
+    background-color: var(--color-superficie-hover);
+}
+
+.boton--sutil {
+    background-color: var(--color-primario-suave);
+    color: var(--color-primario);
+}
+
+.boton--sutil:hover:not(:disabled) {
+    background-color: var(--color-superficie-hover);
+}
+
+.boton--peligro {
+    background-color: var(--color-gasto);
+    color: var(--color-texto-inverso);
+}
+
+.boton--peligro:hover:not(:disabled) {
+    filter: brightness(0.92);
+}
+
+/* Variante discreta para acciones destructivas dentro de listados: el rojo
+   sólido se reserva para la confirmación, donde la acción se consuma. */
+.boton--peligro-sutil {
+    background-color: var(--color-superficie);
+    border-color: var(--color-gasto);
+    color: var(--color-gasto);
+}
+
+.boton--peligro-sutil:hover:not(:disabled) {
+    background-color: var(--color-gasto-suave);
+}
+
+.boton--pequeno {
+    min-height: 2.25rem;
+    padding: var(--espacio-1) var(--espacio-3);
+    font-size: var(--texto-xs);
+}
+
+.boton--icono {
+    min-height: var(--altura-tactil);
+    min-width: var(--altura-tactil);
+    padding: 0;
+    font-size: var(--texto-xl);
+    line-height: 1;
+    color: var(--color-texto-suave);
+}
+
+.boton--icono:hover {
+    color: var(--color-texto);
+}
+
+/* --- Formularios ---------------------------------------------------------- */
+.formulario legend {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    padding-bottom: var(--espacio-2);
+}
+
+.formulario__campos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--espacio-3);
+}
+
+.formulario__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-top: var(--espacio-4);
+}
+
+.formulario__acciones--dialogo {
+    justify-content: flex-end;
+}
+
+.formulario-linea {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--espacio-2);
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+}
+
+.campo--ancho-completo {
+    grid-column: 1 / -1;
+}
+
+.campo label {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+}
+
+.campo__opcional {
+    font-weight: 400;
+    color: var(--color-texto-suave);
+}
+
+.campo__ayuda {
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+    width: 100%;
+    min-height: var(--altura-tactil);
+    padding: var(--espacio-2) var(--espacio-3);
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde-fuerte);
+    border-radius: var(--radio-md);
+    font-size: var(--texto-md);
+    transition: border-color var(--transicion), box-shadow var(--transicion);
+}
+
+.campo textarea {
+    resize: vertical;
+    min-height: 4rem;
+}
+
+.campo input:hover,
+.campo select:hover,
+.campo textarea:hover {
+    border-color: var(--color-primario);
+}
+
+.campo input[aria-invalid="true"],
+.campo select[aria-invalid="true"],
+.campo textarea[aria-invalid="true"] {
+    border-color: var(--color-gasto);
+}
+
+.campo--compacto label {
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+}
+
+.campo--compacto input {
+    min-height: var(--altura-tactil);
+}
+
+.mensaje-error {
+    margin-top: var(--espacio-3);
+    padding: var(--espacio-2) var(--espacio-3);
+    background-color: var(--color-gasto-suave);
+    border-left: 4px solid var(--color-gasto);
+    border-radius: var(--radio-sm);
+    color: var(--color-gasto);
+    font-size: var(--texto-sm);
+}
+
+/* --- Indicadores del resumen --------------------------------------------- */
+.indicador {
+    height: 100%;
+    padding: var(--espacio-4);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+    background-color: var(--color-superficie-alt);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+}
+
+.indicador h4 {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.indicador__valor {
+    font-size: var(--texto-2xl);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+}
+
+.indicador__nota {
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+}
+
+.indicador--ingreso {
+    border-left: 4px solid var(--color-ingreso);
+}
+
+.indicador--ingreso .indicador__valor {
+    color: var(--color-ingreso);
+}
+
+.indicador--gasto {
+    border-left: 4px solid var(--color-gasto);
+}
+
+.indicador--gasto .indicador__valor {
+    color: var(--color-gasto);
+}
+
+.indicador--balance {
+    border-left: 4px solid var(--color-primario);
+}
+
+.indicador--balance .indicador__valor {
+    color: var(--color-primario);
+}
+
+.indicador--balance.es-negativo {
+    border-left-color: var(--color-gasto);
+}
+
+.indicador--balance.es-negativo .indicador__valor {
+    color: var(--color-gasto);
+}
+
+/* --- Barra de proporción -------------------------------------------------- */
+.proporcion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+}
+
+.proporcion figcaption {
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+}
+
+.proporcion__barra {
+    display: flex;
+    width: 100%;
+    height: 0.75rem;
+    border-radius: var(--radio-completo);
+    overflow: hidden;
+    background-color: var(--color-neutro-suave);
+}
+
+.proporcion__parte {
+    display: block;
+    height: 100%;
+    transition: width var(--transicion);
+}
+
+.proporcion__parte--ingreso {
+    background-color: var(--color-ingreso);
+}
+
+.proporcion__parte--gasto {
+    background-color: var(--color-gasto);
+}
+
+.proporcion__leyenda {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+}
+
+.punto {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: var(--radio-completo);
+}
+
+.punto--ingreso {
+    background-color: var(--color-ingreso);
+}
+
+.punto--gasto {
+    background-color: var(--color-gasto);
+    margin-left: var(--espacio-3);
+}
+
+/* --- Navegación ----------------------------------------------------------- */
+.navegacion__enlace {
+    display: block;
+    width: 100%;
+    min-height: var(--altura-tactil);
+    padding: var(--espacio-2) var(--espacio-3);
+    border-radius: var(--radio-md);
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    transition: background-color var(--transicion), color var(--transicion);
+}
+
+.navegacion__enlace:hover {
+    background-color: var(--color-superficie-hover);
+    color: var(--color-texto);
+}
+
+.navegacion__enlace[aria-current="page"] {
+    background-color: var(--color-primario-suave);
+    color: var(--color-primario);
+}
+
+/* --- Tablas --------------------------------------------------------------- */
+.tabla-desplazable {
+    /* Contenedor sin significado semántico: aísla el scroll horizontal de la
+       tabla para que nunca lo herede el documento completo. */
+    width: 100%;
+    overflow-x: auto;
+}
+
+.tabla {
+    font-size: var(--texto-sm);
+}
+
+.tabla__titulo {
+    caption-side: bottom;
+    padding-top: var(--espacio-3);
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+    text-align: left;
+}
+
+.tabla thead th {
+    padding: var(--espacio-2) var(--espacio-3);
+    background-color: var(--color-superficie-alt);
+    border-bottom: 2px solid var(--color-borde);
+    font-size: var(--texto-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-texto-suave);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tabla tbody td {
+    padding: var(--espacio-3);
+    border-bottom: 1px solid var(--color-borde);
+    vertical-align: middle;
+}
+
+.tabla tbody tr:hover {
+    background-color: var(--color-superficie-alt);
+}
+
+.celda--numerica {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.celda--acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+}
+
+.celda--ingreso {
+    color: var(--color-ingreso);
+    font-weight: 600;
+}
+
+.celda--gasto {
+    color: var(--color-gasto);
+    font-weight: 600;
+}
+
+/* --- Etiquetas de tipo ---------------------------------------------------- */
+.etiqueta {
+    display: inline-block;
+    padding: 0.1rem var(--espacio-2);
+    border-radius: var(--radio-completo);
+    font-size: var(--texto-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.etiqueta--ingreso {
+    background-color: var(--color-ingreso-suave);
+    color: var(--color-ingreso);
+}
+
+.etiqueta--gasto {
+    background-color: var(--color-gasto-suave);
+    color: var(--color-gasto);
+}
+
+.etiqueta--aviso {
+    background-color: var(--color-aviso-suave);
+    color: var(--color-aviso);
+}
+
+.etiqueta--neutra {
+    background-color: var(--color-neutro-suave);
+    color: var(--color-texto-suave);
+}
+
+/* --- Estados de la interfaz (loading / empty / error) --------------------- */
+.estado {
+    padding: var(--espacio-4);
+    border-radius: var(--radio-md);
+    font-size: var(--texto-sm);
+    text-align: center;
+    border: 1px dashed var(--color-borde-fuerte);
+    color: var(--color-texto-suave);
+    background-color: var(--color-superficie-alt);
+}
+
+.estado--cargando::before {
+    content: "";
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin-right: var(--espacio-2);
+    vertical-align: -0.1rem;
+    border: 2px solid var(--color-borde-fuerte);
+    border-top-color: var(--color-primario);
+    border-radius: var(--radio-completo);
+    animation: girar 700ms linear infinite;
+}
+
+.estado--error {
+    border-style: solid;
+    border-color: var(--color-gasto);
+    background-color: var(--color-gasto-suave);
+    color: var(--color-gasto);
+}
+
+.estado--vacio {
+    border-style: dashed;
+}
+
+.estado--exito {
+    border-style: solid;
+    border-color: var(--color-ingreso);
+    background-color: var(--color-ingreso-suave);
+    color: var(--color-ingreso);
+}
+
+@keyframes girar {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- Predicción ----------------------------------------------------------- */
+.prediccion {
+    padding: var(--espacio-4);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+    background-color: var(--color-superficie-alt);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+}
+
+.prediccion__mes {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.prediccion__valor {
+    font-size: var(--texto-3xl);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--color-primario);
+    overflow-wrap: anywhere;
+}
+
+.prediccion__detalle {
+    font-size: var(--texto-sm);
+    color: var(--color-texto-suave);
+}
+
+.lista-datos {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--espacio-2) var(--espacio-4);
+    font-size: var(--texto-sm);
+    margin-top: var(--espacio-2);
+}
+
+.lista-datos dt {
+    font-weight: 600;
+    color: var(--color-texto-suave);
+}
+
+.lista-datos dd {
+    margin: 0;
+}
+
+/* --- Notas laterales ------------------------------------------------------ */
+.nota {
+    padding: var(--espacio-3) var(--espacio-4);
+    border-left: 4px solid var(--color-primario);
+    border-radius: var(--radio-sm);
+    background-color: var(--color-primario-suave);
+    font-size: var(--texto-sm);
+}
+
+.nota h4 {
+    font-size: var(--texto-sm);
+    margin-bottom: var(--espacio-1);
+}
+
+.nota code {
+    font-family: var(--fuente-mono);
+    font-size: var(--texto-xs);
+    overflow-wrap: anywhere;
+}
+
+/* --- Diálogos ------------------------------------------------------------- */
+.dialogo {
+    width: min(38rem, calc(100vw - 2rem));
+    margin: auto;
+    padding: 0;
+    border-radius: var(--radio-lg);
+    background-color: var(--color-superficie);
+    color: var(--color-texto);
+    box-shadow: var(--sombra-3);
+}
+
+.dialogo--estrecho {
+    width: min(26rem, calc(100vw - 2rem));
+}
+
+.dialogo .formulario,
+.dialogo__contenido {
+    padding: var(--espacio-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+}
+
+.dialogo__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    padding-bottom: var(--espacio-3);
+    border-bottom: 1px solid var(--color-borde);
+    margin-bottom: var(--espacio-3);
+}
+
+.dialogo__cabecera h2 {
+    font-size: var(--texto-xl);
+}
+
+/* --- Notificaciones efímeras ---------------------------------------------- */
+.notificaciones {
+    position: fixed;
+    inset-block-end: var(--espacio-4);
+    inset-inline: var(--espacio-4);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    pointer-events: none;
+}
+
+.notificacion {
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-md);
+    box-shadow: var(--sombra-2);
+    font-size: var(--texto-sm);
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-left: 4px solid var(--color-primario);
+}
+
+.notificacion--exito {
+    border-left-color: var(--color-ingreso);
+    color: var(--color-ingreso);
+}
+
+.notificacion--error {
+    border-left-color: var(--color-gasto);
+    color: var(--color-gasto);
+}

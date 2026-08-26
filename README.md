@@ -13,7 +13,7 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 ## 🛠️ Stack Tecnológico
 
 * **Backend:** Python 3.10+ / FastAPI (Arquitectura RESTful por capas)
-* **Frontend:** HTML5 Semántico, CSS3 Moderno, JavaScript Vanilla (Fetch API) y Chart.js
+* **Frontend:** HTML5 Semántico, CSS3 Moderno (Grid, Flexbox, variables) y JavaScript Vanilla (Fetch API), sin frameworks ni dependencias externas
 * **Base de Datos:** MySQL 8.0+ (Normalización 3FN con PyMySQL y SQL parametrizado)
 * **Seguridad:** Hashing seguro de contraseñas con `bcrypt` (rounds=12)
 * **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score)
@@ -44,11 +44,25 @@ finanzas-personales/
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
 ├── frontend/
-│   ├── index.html           # Estructura semántica HTML5
+│   ├── index.html           # Estructura semántica HTML5 (única página)
 │   ├── css/
-│   │   └── style.css        # Estilos base y responsive design
-│   └── js/
-│       └── app.js           # Lógica frontend
+│   │   ├── reset.css        # Normalización mínima del navegador
+│   │   ├── variables.css    # Design tokens (color, espaciado, tipografía)
+│   │   ├── layout.css       # Cabecera, navegación, rejillas y pie
+│   │   ├── components.css   # Tarjetas, botones, formularios, tablas, diálogos
+│   │   └── responsive.css   # Media queries (320 px → 1440 px+)
+│   ├── js/
+│   │   ├── config.js        # Configuración única (URL de la API, rutas)
+│   │   ├── api.js           # Capa centralizada de fetch y errores
+│   │   ├── ui.js            # Formateo, estados de UI, diálogos y avisos
+│   │   ├── app.js           # Arranque, usuario activo y navegación
+│   │   ├── dashboard.js     # Vista principal (panel)
+│   │   ├── movimientos.js   # CRUD y filtros de movimientos
+│   │   ├── categorias.js    # Alta y consulta de categorías
+│   │   ├── resumen.js       # Resumen mensual
+│   │   └── analytics.js     # Predicción y anomalías
+│   └── assets/
+│       └── favicon.svg      # Icono de la aplicación
 ├── database/
 │   ├── schema.sql           # Estructura: tablas, restricciones e índices (3FN)
 │   ├── seed.sql             # Datos de prueba (6+ meses de histórico)
@@ -134,6 +148,71 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 * **API Root:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 * **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 * **Documentación Alternativa ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
+---
+
+## 🖥️ Guía de Inicio Rápido (Frontend)
+
+El frontend es HTML5 semántico, CSS y JavaScript sin frameworks ni dependencias
+externas: no necesita instalación, compilación ni gestor de paquetes. Solo debe
+servirse por HTTP (no abrirlo con `file://`), porque el navegador exige un
+origen válido para las peticiones a la API.
+
+### 1. Levantar el backend
+
+El frontend no funciona sin la API. Con el backend en marcha (ver la sección
+anterior) en `http://127.0.0.1:8000`, abre **otra terminal**.
+
+### 2. Servir el frontend
+
+Cualquier servidor estático sirve. Con el propio Python:
+
+```bash
+cd frontend
+python -m http.server 5500 --bind 127.0.0.1
+```
+
+Y abre [http://127.0.0.1:5500/index.html](http://127.0.0.1:5500/index.html).
+
+> Con la extensión **Live Server** de VS Code (puerto 5500 por defecto) funciona
+> igual: basta con abrir `frontend/index.html` con *Open with Live Server*.
+
+### 3. Configuración de la API
+
+La URL de la API se declara **en un único lugar**, la etiqueta `<meta>` de
+`frontend/index.html`:
+
+```html
+<meta name="api-base-url" content="http://127.0.0.1:8000">
+```
+
+`js/config.js` la lee al arrancar y el resto del código consume esa
+configuración a través de `js/api.js`. Para apuntar a otro entorno (por ejemplo
+la URL pública de Render) basta con cambiar ese `content`; no hay ninguna otra
+URL de API repartida por los archivos.
+
+El frontend **no contiene ningún secreto**: no maneja claves de API, tokens ni
+credenciales de MySQL. Solo conoce la URL pública del backend.
+
+### 4. Conexión con el backend (CORS)
+
+El backend restringe los orígenes permitidos mediante `CORS_ORIGINS`. Los
+puertos habituales de desarrollo ya vienen contemplados en `.env.example`:
+
+```env
+CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:5500","http://localhost:5500","http://127.0.0.1:8000"]
+```
+
+Si sirves el frontend en otro puerto, añádelo a esa lista en tu `.env`.
+
+### 5. Mecanismo de usuario
+
+El backend no tiene sesiones ni autenticación: cada endpoint identifica al
+propietario de los datos con el parámetro `id_usuario`. El frontend respeta ese
+mecanismo tal cual — el campo *Usuario activo (ID)* de la cabecera fija el
+identificador y se recuerda en `localStorage`. El botón *Registrar usuario*
+utiliza el endpoint existente `POST /api/usuarios` y adopta el ID devuelto. No
+hay login, ni JWT, ni tokens.
 
 ---
 

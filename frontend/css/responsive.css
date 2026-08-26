@@ -1,0 +1,173 @@
+/* ==========================================================================
+   RESPONSIVE — Adaptaciones por tamaño de pantalla
+   El diseño base (layout.css / components.css) es mobile first: aquí solo se
+   añaden mejoras progresivas a medida que hay más espacio disponible, salvo
+   la regla de tablas apiladas, que aplica únicamente a pantallas pequeñas.
+
+   Breakpoints:
+     hasta 47.99em (< 768 px) .... tablas apiladas en tarjetas
+     desde 30em    (480 px) ...... rejilla de campos e indicadores a 2 columnas
+     desde 48em    (768 px) ...... cabecera en línea, navegación horizontal
+     desde 64em    (1024 px) ..... indicadores a 3 columnas, rejilla doble
+     desde 90em    (1440 px) ..... mayor respiración vertical y tipografía
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   TABLAS APILADAS EN MÓVIL
+   Cada fila se convierte en una tarjeta y cada celda muestra su encabezado
+   mediante el atributo data-etiqueta. Evita el scroll horizontal en 320 px.
+   -------------------------------------------------------------------------- */
+@media (max-width: 47.99em) {
+
+    .tabla--apilable thead {
+        /* Oculto visualmente, pero los encabezados siguen expuestos vía
+           data-etiqueta en cada celda. */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .tabla--apilable tbody tr {
+        display: block;
+        margin-bottom: var(--espacio-3);
+        border: 1px solid var(--color-borde);
+        border-radius: var(--radio-md);
+        background-color: var(--color-superficie-alt);
+        padding: var(--espacio-2);
+    }
+
+    .tabla--apilable tbody td {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--espacio-3);
+        padding: var(--espacio-2);
+        border-bottom: 1px dashed var(--color-borde);
+        text-align: left;
+    }
+
+    .tabla--apilable tbody tr td:last-child {
+        border-bottom: none;
+    }
+
+    .tabla--apilable tbody td::before {
+        content: attr(data-etiqueta);
+        font-size: var(--texto-xs);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--color-texto-suave);
+    }
+
+    .tabla--apilable .celda--acciones {
+        justify-content: flex-end;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   >= 480 px — Móviles grandes
+   -------------------------------------------------------------------------- */
+@media (min-width: 30em) {
+
+    .formulario__campos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rejilla-indicadores {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .navegacion__lista {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   >= 768 px — Tablet
+   -------------------------------------------------------------------------- */
+@media (min-width: 48em) {
+
+    .cabecera__barra {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding-inline: var(--espacio-5);
+    }
+
+    .marca {
+        font-size: var(--texto-xl);
+    }
+
+    .selector-usuario {
+        justify-content: flex-end;
+        max-width: 32rem;
+    }
+
+    .navegacion__lista {
+        display: flex;
+        gap: var(--espacio-1);
+        padding-inline: var(--espacio-5);
+    }
+
+    .navegacion__enlace {
+        width: auto;
+        padding-inline: var(--espacio-4);
+    }
+
+    .contenido {
+        padding: var(--espacio-5);
+    }
+
+    .tarjeta {
+        padding: var(--espacio-5);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   >= 1024 px — Laptop
+   -------------------------------------------------------------------------- */
+@media (min-width: 64em) {
+
+    .rejilla-indicadores {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .rejilla-doble {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .formulario--filtros .formulario__campos {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .vista > h2 {
+        font-size: var(--texto-3xl);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   >= 1440 px — Escritorio amplio
+   -------------------------------------------------------------------------- */
+@media (min-width: 90em) {
+
+    .contenido {
+        padding-block: var(--espacio-6);
+    }
+
+    .vista {
+        gap: var(--espacio-5);
+    }
+
+    .tabla {
+        font-size: var(--texto-md);
+    }
+
+    .notificaciones {
+        inset-inline: auto var(--espacio-6);
+        max-width: 26rem;
+    }
+}

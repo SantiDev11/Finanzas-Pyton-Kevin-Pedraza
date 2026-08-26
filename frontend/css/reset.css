@@ -1,0 +1,102 @@
+/* ==========================================================================
+   RESET — Normalización mínima y moderna
+   Se limita a neutralizar los estilos por defecto del navegador que estorban;
+   no define ningún valor de diseño (eso vive en variables.css).
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd,
+fieldset,
+legend {
+    margin: 0;
+}
+
+ul[class],
+ol[class] {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+body {
+    min-height: 100vh;
+    text-rendering: optimizeSpeed;
+}
+
+img,
+picture,
+svg {
+    max-width: 100%;
+    display: block;
+}
+
+input,
+button,
+textarea,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+fieldset {
+    border: none;
+    padding: 0;
+    min-width: 0;
+}
+
+dialog {
+    border: none;
+    padding: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+dialog::backdrop {
+    background-color: rgb(15 23 42 / 55%);
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
