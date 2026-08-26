@@ -42,12 +42,87 @@ finanzas-personales/
 │   │   └── style.css        # Estilos base y responsive design
 │   └── js/
 │       └── app.js           # Lógica frontend
-├── database/                # Scripts DDL y DML (Fase 2)
+├── database/
+│   ├── schema.sql           # Estructura: tablas, restricciones e índices
+│   ├── seed.sql             # Datos de prueba
+│   └── queries.sql          # Consultas de validación del modelo
 ├── docs/                    # Documentación técnica
 ├── .env.example             # Plantilla de variables de entorno
 ├── .gitignore               # Exclusiones de control de versiones
 └── README.md                # Documentación principal
 ```
+
+---
+
+## 🗄️ Base de Datos
+
+### Requisitos
+
+* **MySQL 8.0 o superior.** El modelo usa restricciones `CHECK` (disponibles a partir de
+  MySQL 8.0.16) y la intercalación `utf8mb4_0900_ai_ci`, ninguna de las dos existe en
+  versiones anteriores.
+* Motor de almacenamiento **InnoDB**, necesario para las claves foráneas.
+
+### Creación de la base de datos
+
+Los scripts crean la base de datos `finanzas_personales` por sí mismos, así que basta con
+ejecutarlos en orden desde la raíz del proyecto:
+
+```bash
+mysql -u root -p < database/schema.sql
+mysql -u root -p < database/seed.sql
+```
+
+En Windows (PowerShell), si el cliente `mysql` no está en el `PATH`, indica la ruta completa
+al binario (por ejemplo el que incluye Laragon o XAMPP):
+
+```powershell
+Get-Content database\schema.sql -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4
+Get-Content database\seed.sql   -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4
+```
+
+* `schema.sql` — crea la base de datos, las tres tablas, las restricciones y los índices.
+  Es idempotente: elimina y recrea las tablas, por lo que **descarta los datos existentes**.
+* `seed.sql` — carga datos de prueba. También es idempotente: vacía las tablas antes de
+  insertar. Requiere `schema.sql` ejecutado previamente.
+* `queries.sql` — consultas de validación (totales, balance, agrupaciones y filtros por
+  fecha). No modifica datos; sirve para comprobar que el modelo responde correctamente.
+
+### Estructura
+
+Tres tablas relacionadas, normalizadas hasta la Tercera Forma Normal:
+
+| Tabla             | Contenido                                        | Clave primaria  |
+| ----------------- | ------------------------------------------------ | --------------- |
+| `usuarios`        | Personas registradas en la aplicación            | `id_usuario`    |
+| `categorias`      | Categorías de ingreso o gasto de cada usuario    | `id_categoria`  |
+| `ingresos_gastos` | Movimientos financieros registrados              | `id_movimiento` |
+
+```text
+usuarios ──1:N──> categorias ──1:N──> ingresos_gastos
+    └────────────────1:N───────────────────┘
+```
+
+Un usuario posee sus propias categorías y sus propios movimientos; cada movimiento se
+clasifica mediante una categoría que pertenece a ese mismo usuario.
+
+Detalles del diseño:
+
+* Los importes se almacenan en `DECIMAL(12,2)`, nunca en `FLOAT`, para evitar el error de
+  redondeo binario.
+* El dominio de `tipo` (`ingreso` / `gasto`) se restringe con `ENUM`.
+* Todas las claves foráneas usan `ON DELETE RESTRICT`: ningún borrado destruye historial
+  financiero de forma implícita. La baja de una cuenta se ejecuta como una transacción
+  ordenada, descrita en la sección 6 de `schema.sql`.
+* El juego de caracteres es `utf8mb4` de extremo a extremo, de modo que tildes y eñes
+  (á, é, í, ó, ú, ñ) se almacenan y se recuperan sin pérdida.
+
+### Credenciales
+
+Los scripts no contienen ninguna credencial. Copia `.env.example` a `.env` y ajusta ahí los
+datos de conexión; `.env` está excluido del control de versiones. Los valores de
+`contrasena_hash` incluidos en `seed.sql` son cadenas ficticias con formato de bcrypt y no
+corresponden a ninguna contraseña real.
 
 ---
 
