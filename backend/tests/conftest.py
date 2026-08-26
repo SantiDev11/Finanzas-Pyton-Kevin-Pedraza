@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app.core.dependencies import (
     get_categoria_service,
     get_movimiento_service,
+    get_resumen_service,
     get_usuario_service,
 )
 from app.repositories.categoria_repository import CategoriaRepository
@@ -14,6 +15,7 @@ from app.repositories.movimiento_repository import MovimientoRepository
 from app.repositories.usuario_repository import UsuarioRepository
 from app.services.categoria_service import CategoriaService
 from app.services.movimiento_service import MovimientoService
+from app.services.resumen_service import ResumenService
 from app.services.usuario_service import UsuarioService
 from main import app
 
@@ -190,6 +192,25 @@ class InMemoryMovimientoRepository(MovimientoRepository):
             return True
         return False
 
+    def get_totales_por_periodo(
+        self,
+        id_usuario: int,
+        inicio: date,
+        fin_exclusivo: date,
+    ) -> Dict[str, Any]:
+        """Réplica en memoria de la agregación SQL: rango semiabierto [inicio, fin_exclusivo)."""
+        del_periodo = [
+            m for m in self.movimientos.values()
+            if m["id_usuario"] == id_usuario and inicio <= m["fecha"] < fin_exclusivo
+        ]
+        total_ingresos = sum(
+            (m["monto"] for m in del_periodo if m["tipo"] == "ingreso"), Decimal("0")
+        )
+        total_gastos = sum(
+            (m["monto"] for m in del_periodo if m["tipo"] == "gasto"), Decimal("0")
+        )
+        return {"total_ingresos": total_ingresos, "total_gastos": total_gastos}
+
 
 @pytest.fixture
 def fake_usuario_repo() -> InMemoryUsuarioRepository:
@@ -243,11 +264,21 @@ def movimiento_service(
 
 
 @pytest.fixture
-def client(usuario_service, categoria_service, movimiento_service) -> TestClient:
+def resumen_service(fake_movimiento_repo, fake_usuario_repo) -> ResumenService:
+    """Servicio de resumen compartiendo los mismos repositorios en memoria."""
+    return ResumenService(
+        movimiento_repository=fake_movimiento_repo,
+        usuario_repository=fake_usuario_repo,
+    )
+
+
+@pytest.fixture
+def client(usuario_service, categoria_service, movimiento_service, resumen_service) -> TestClient:
     """Cliente HTTP con dependencias sobreescritas para pruebas de integración aisladas."""
     app.dependency_overrides[get_usuario_service] = lambda: usuario_service
     app.dependency_overrides[get_categoria_service] = lambda: categoria_service
     app.dependency_overrides[get_movimiento_service] = lambda: movimiento_service
+    app.dependency_overrides[get_resumen_service] = lambda: resumen_service
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()

@@ -8,6 +8,7 @@ from app.repositories.movimiento_repository import MovimientoRepository
 from app.services.usuario_service import UsuarioService
 from app.services.categoria_service import CategoriaService
 from app.services.movimiento_service import MovimientoService
+from app.services.resumen_service import ResumenService
 
 
 def get_db_connection() -> Generator[pymysql.Connection, None, None]:
@@ -41,4 +42,14 @@ def get_movimiento_service() -> MovimientoService:
         movimiento_repository=mov_repo,
         usuario_repository=usr_repo,
         categoria_repository=cat_repo
+    )
+
+
+def get_resumen_service() -> ResumenService:
+    """Inyector del servicio de resumen financiero."""
+    mov_repo = MovimientoRepository()
+    usr_repo = UsuarioRepository()
+    return ResumenService(
+        movimiento_repository=mov_repo,
+        usuario_repository=usr_repo
     )

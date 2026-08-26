@@ -169,3 +169,37 @@ class MovimientoRepository:
         with get_db_cursor(self._connection) as cursor:
             cursor.execute(sql, (id_movimiento,))
             return cursor.rowcount > 0
+
+    def get_totales_por_periodo(
+        self,
+        id_usuario: int,
+        inicio: date,
+        fin_exclusivo: date
+    ) -> Dict[str, Any]:
+        """
+        Agrega los totales de ingresos y gastos de un usuario dentro de un periodo.
+
+        La agregación se resuelve íntegramente en MySQL con una única consulta que
+        devuelve una sola fila: no se transfieren los movimientos individuales a
+        Python ni se realizan consultas adicionales por tipo (evita N+1).
+
+        El filtro de fechas usa el rango semiabierto [inicio, fin_exclusivo). Se
+        compara la columna `fecha` directamente, sin DATE_FORMAT() ni YEAR()/MONTH(),
+        porque envolverla en una función impediría al optimizador usar el índice
+        idx_mov_usuario_fecha y forzaría un recorrido completo de la tabla.
+
+        Si no hay movimientos, la consulta devuelve igualmente una fila con ceros
+        gracias a COALESCE, de modo que la capa superior no necesita casos especiales.
+        """
+        sql = """
+            SELECT
+                COALESCE(SUM(CASE WHEN tipo = 'ingreso' THEN monto END), 0) AS total_ingresos,
+                COALESCE(SUM(CASE WHEN tipo = 'gasto'   THEN monto END), 0) AS total_gastos
+            FROM ingresos_gastos
+            WHERE id_usuario = %s
+              AND fecha >= %s
+              AND fecha <  %s
+        """
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_usuario, inicio, fin_exclusivo))
+            return cursor.fetchone()

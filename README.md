@@ -28,16 +28,16 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 finanzas-personales/
 ├── backend/
 │   ├── app/
-│   │   ├── core/            # Configuración, seguridad (bcrypt), excepciones y dependencias
+│   │   ├── core/            # Configuración, seguridad (bcrypt), periodos, excepciones y dependencias
 │   │   ├── database/        # Conexión, transacción context manager y pool MySQL
-│   │   ├── routes/          # Controladores HTTP (Usuarios, Categorías, Movimientos)
+│   │   ├── routes/          # Controladores HTTP (Usuarios, Categorías, Movimientos, Resumen)
 │   │   ├── services/        # Lógica de negocio y validaciones de dominio
 │   │   ├── repositories/    # Acceso a datos (SQL puro parametrizado)
 │   │   ├── models/          # Entidades de dominio
 │   │   ├── schemas/         # Validación y contratos de API con Pydantic
 │   │   └── analytics/       # Módulo analítico y Machine Learning (Fases posteriores)
-│   ├── tests/               # Pruebas unitarias e integración (53 tests automatizados)
-│   │   ├── unit/            # Tests de servicios, movimientos y seguridad
+│   ├── tests/               # Pruebas unitarias e integración (110 tests automatizados)
+│   │   ├── unit/            # Tests de servicios, periodos, movimientos y seguridad
 │   │   └── integration/     # Tests de endpoints HTTP
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
@@ -135,7 +135,7 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 ---
 
-## 📡 Endpoints Implementados (Fases 1 a 4)
+## 📡 Endpoints Implementados (Fases 1 a 5)
 
 ### Salud y Estado
 | Método | Endpoint | Propósito | Códigos |
@@ -165,11 +165,53 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 5. **Aislamiento por Usuario:** Las consultas y modificaciones verifican la titularidad del recurso, impidiendo accesos o ediciones no autorizadas.
 6. **Ordenamiento:** Los movimientos se listan ordenados de forma descendente (`fecha DESC, id_movimiento DESC`).
 
+### Resumen Financiero (Fase 5)
+| Método | Endpoint | Propósito | Query Params | Códigos |
+|---|---|---|---|---|
+| `GET` | `/api/resumen` | Resumen financiero de un mes | `id_usuario` (req), `mes` (req, `YYYY-MM`) | `200 OK`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable` |
+
+**Parámetros:**
+
+* `id_usuario` — entero positivo. Si el usuario no existe se devuelve `404`.
+* `mes` — periodo en formato `YYYY-MM` (por ejemplo `2026-08`). Si el formato es incorrecto
+  (`2026-8`, `agosto`) o el mes no existe (`2026-13`, `2026-00`) se devuelve `400`.
+
+**Ejemplo:**
+
+```bash
+curl "http://127.0.0.1:8000/api/resumen?id_usuario=1&mes=2026-08"
+```
+
+```json
+{
+    "id_usuario": 1,
+    "mes": "2026-08",
+    "total_ingresos": "3749.87",
+    "total_gastos": "1558.69",
+    "balance": "2191.18"
+}
+```
+
+**Qué calcula cada campo:**
+
+* **`total_ingresos`** — suma de los montos de los movimientos de tipo `ingreso` del usuario
+  cuya fecha contable cae dentro del mes solicitado.
+* **`total_gastos`** — suma de los montos de los movimientos de tipo `gasto` del mismo usuario
+  y mes.
+* **`balance`** — ahorro del periodo: `total_ingresos - total_gastos`. Lo calcula siempre el
+  backend, que es la única fuente de verdad; el cliente nunca envía importes. Un balance
+  **negativo es un resultado válido** y se devuelve con `200` cuando los gastos superan a los
+  ingresos.
+
+Los tres importes se manejan como `Decimal` con dos decimales, nunca como `float`, para evitar
+el error de redondeo binario. Un mes **sin movimientos no es un error**: la respuesta es `200`
+con los tres importes en `0.00`.
+
 ---
 
 ## 🧪 Pruebas Automatizadas
 
-La suite de pruebas contiene **53 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados y regresión:
+La suite de pruebas contiene **110 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados y regresión:
 
 ```bash
 .venv\Scripts\pytest backend/tests/ -v
