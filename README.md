@@ -30,14 +30,14 @@ finanzas-personales/
 │   ├── app/
 │   │   ├── core/            # Configuración, seguridad (bcrypt), excepciones y dependencias
 │   │   ├── database/        # Conexión, transacción context manager y pool MySQL
-│   │   ├── routes/          # Controladores y rutas HTTP (Usuarios, Categorías)
+│   │   ├── routes/          # Controladores HTTP (Usuarios, Categorías, Movimientos)
 │   │   ├── services/        # Lógica de negocio y validaciones de dominio
 │   │   ├── repositories/    # Acceso a datos (SQL puro parametrizado)
 │   │   ├── models/          # Entidades de dominio
 │   │   ├── schemas/         # Validación y contratos de API con Pydantic
 │   │   └── analytics/       # Módulo analítico y Machine Learning (Fases posteriores)
-│   ├── tests/               # Pruebas unitarias e integración (23 tests automatizados)
-│   │   ├── unit/            # Tests de servicios y seguridad
+│   ├── tests/               # Pruebas unitarias e integración (53 tests automatizados)
+│   │   ├── unit/            # Tests de servicios, movimientos y seguridad
 │   │   └── integration/     # Tests de endpoints HTTP
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
@@ -135,20 +135,41 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 ---
 
-## 📡 Endpoints Implementados (Fase 3)
+## 📡 Endpoints Implementados (Fases 1 a 4)
 
-| Método | Endpoint | Propósito | Request Body (JSON) | Códigos de Respuesta |
+### Salud y Estado
+| Método | Endpoint | Propósito | Códigos |
+|---|---|---|---|
+| `GET` | `/` | Health check de la API | `200 OK` |
+
+### Usuarios y Categorías (Fase 3)
+| Método | Endpoint | Propósito | Request Body (JSON) | Códigos |
 |---|---|---|---|---|
-| `GET` | `/` | Health check de la API | Ninguno | `200 OK` |
-| `POST` | `/api/usuarios` | Registro de nuevo usuario | `{"nombre": str, "correo": str, "contrasena": str}` | `201 Created`, `400`, `409 Conflict`, `422` |
-| `POST` | `/api/categorias` | Creación de categoría | `{"nombre": str, "tipo": "ingreso"\|"gasto", "id_usuario": int}` | `201 Created`, `400`, `404 Not Found`, `409 Conflict`, `422` |
-| `GET` | `/api/categorias?id_usuario=` | Listado de categorías de un usuario | Ninguno (Query Param: `id_usuario`) | `200 OK`, `400`, `404 Not Found` |
+| `POST` | `/api/usuarios` | Registro de nuevo usuario | `{"nombre": str, "correo": str, "contrasena": str}` | `201`, `400`, `409`, `422` |
+| `POST` | `/api/categorias` | Creación de categoría | `{"nombre": str, "tipo": "ingreso"\|"gasto", "id_usuario": int}` | `201`, `400`, `404`, `409`, `422` |
+| `GET` | `/api/categorias?id_usuario=` | Listado de categorías de un usuario | Ninguno (Query Param) | `200`, `400`, `404` |
+
+### Movimientos Financieros (Fase 4)
+| Método | Endpoint | Propósito | Request Body / Query Params | Códigos |
+|---|---|---|---|---|
+| `POST` | `/api/movimientos` | Registrar ingreso o gasto | `{"id_usuario": int, "id_categoria": int, "tipo": "ingreso"\|"gasto", "monto": Decimal, "fecha": date, "descripcion": str?}` | `201 Created`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable` |
+| `GET` | `/api/movimientos` | Listar con filtros | Query: `id_usuario` (req), `desde` (opt), `hasta` (opt), `categoria` (opt) | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `PUT` | `/api/movimientos/{id}` | Actualizar movimiento existente | Path: `id`. Body: `MovimientoUpdate` | `200 OK`, `400 Bad Request`, `404 Not Found`, `422` |
+| `DELETE` | `/api/movimientos/{id}` | Eliminar movimiento por ID | Path: `id` | `200 OK`, `404 Not Found` |
+
+### Reglas de Negocio en Movimientos:
+1. **Precisión Monetaria:** El monto se valida y procesa como tipo `Decimal(12,2)` estrictamente positivo (`monto > 0`).
+2. **Pertenencia de Categoría:** La categoría debe existir y pertenecer al mismo usuario (`id_usuario`).
+3. **Coherencia de Tipo:** El `tipo` del movimiento (`ingreso`/`gasto`) debe coincidir exactamente con el `tipo` de la categoría asignada.
+4. **Validación de Rangos:** En filtros de consulta, `desde` no puede ser posterior a `hasta`.
+5. **Aislamiento por Usuario:** Las consultas y modificaciones verifican la titularidad del recurso, impidiendo accesos o ediciones no autorizadas.
+6. **Ordenamiento:** Los movimientos se listan ordenados de forma descendente (`fecha DESC, id_movimiento DESC`).
 
 ---
 
 ## 🧪 Pruebas Automatizadas
 
-La suite de pruebas incluye tests unitarios de seguridad y servicios, así como tests de integración sobre los endpoints HTTP usando `pytest` y `TestClient`:
+La suite de pruebas contiene **53 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados y regresión:
 
 ```bash
 .venv\Scripts\pytest backend/tests/ -v

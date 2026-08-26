@@ -4,8 +4,10 @@ import pymysql
 from app.database.connection import create_connection
 from app.repositories.usuario_repository import UsuarioRepository
 from app.repositories.categoria_repository import CategoriaRepository
+from app.repositories.movimiento_repository import MovimientoRepository
 from app.services.usuario_service import UsuarioService
 from app.services.categoria_service import CategoriaService
+from app.services.movimiento_service import MovimientoService
 
 
 def get_db_connection() -> Generator[pymysql.Connection, None, None]:
@@ -28,3 +30,15 @@ def get_categoria_service() -> CategoriaService:
     cat_repo = CategoriaRepository()
     usr_repo = UsuarioRepository()
     return CategoriaService(categoria_repository=cat_repo, usuario_repository=usr_repo)
+
+
+def get_movimiento_service() -> MovimientoService:
+    """Inyector del servicio de movimientos financieros."""
+    mov_repo = MovimientoRepository()
+    usr_repo = UsuarioRepository()
+    cat_repo = CategoriaRepository()
+    return MovimientoService(
+        movimiento_repository=mov_repo,
+        usuario_repository=usr_repo,
+        categoria_repository=cat_repo
+    )

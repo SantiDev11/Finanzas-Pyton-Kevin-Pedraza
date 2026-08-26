@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 from typing import Optional
 
 
@@ -20,3 +21,16 @@ class Categoria:
     nombre: str
     tipo: str  # 'ingreso' | 'gasto'
     id_usuario: int
+
+
+@dataclass
+class Movimiento:
+    """Entidad de dominio que representa un Movimiento financiero (ingreso o gasto)."""
+    id_movimiento: Optional[int]
+    id_usuario: int
+    id_categoria: int
+    tipo: str  # 'ingreso' | 'gasto'
+    monto: Decimal
+    fecha: date
+    descripcion: Optional[str] = None
+    fecha_creacion: Optional[datetime] = None

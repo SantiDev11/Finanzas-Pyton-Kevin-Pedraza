@@ -14,6 +14,7 @@ from app.core.exceptions import (
 )
 from app.routes.usuarios_routes import router as usuarios_router
 from app.routes.categorias_routes import router as categorias_router
+from app.routes.movimientos_routes import router as movimientos_router
 
 # Configuración de logging
 logging.basicConfig(
@@ -82,6 +83,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 app.include_router(usuarios_router)
 app.include_router(categorias_router)
+app.include_router(movimientos_router)
 
 
 @app.get("/", status_code=status.HTTP_200_OK, tags=["Salud"])
