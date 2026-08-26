@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.dependencies import (
+    get_analitica_service,
     get_categoria_service,
     get_movimiento_service,
     get_resumen_service,
@@ -16,6 +17,7 @@ from app.repositories.usuario_repository import UsuarioRepository
 from app.services.categoria_service import CategoriaService
 from app.services.movimiento_service import MovimientoService
 from app.services.resumen_service import ResumenService
+from app.services.analitica_service import AnaliticaService
 from app.services.usuario_service import UsuarioService
 from main import app
 
@@ -211,6 +213,15 @@ class InMemoryMovimientoRepository(MovimientoRepository):
         )
         return {"total_ingresos": total_ingresos, "total_gastos": total_gastos}
 
+    def list_gastos_por_usuario(self, id_usuario: int) -> List[Dict[str, Any]]:
+        """Réplica en memoria de la consulta de gastos para analítica."""
+        gastos = [
+            m for m in self.movimientos.values()
+            if m["id_usuario"] == id_usuario and m["tipo"] == "gasto"
+        ]
+        gastos.sort(key=lambda x: (x["fecha"], x["id_movimiento"]))
+        return gastos
+
 
 @pytest.fixture
 def fake_usuario_repo() -> InMemoryUsuarioRepository:
@@ -273,12 +284,26 @@ def resumen_service(fake_movimiento_repo, fake_usuario_repo) -> ResumenService:
 
 
 @pytest.fixture
-def client(usuario_service, categoria_service, movimiento_service, resumen_service) -> TestClient:
+def analitica_service(fake_movimiento_repo, fake_usuario_repo) -> AnaliticaService:
+    """Servicio de analítica compartiendo los mismos repositorios en memoria."""
+    return AnaliticaService(
+        movimiento_repository=fake_movimiento_repo,
+        usuario_repository=fake_usuario_repo,
+    )
+
+
+@pytest.fixture
+def client(
+    usuario_service, categoria_service, movimiento_service,
+    resumen_service, analitica_service
+) -> TestClient:
     """Cliente HTTP con dependencias sobreescritas para pruebas de integración aisladas."""
     app.dependency_overrides[get_usuario_service] = lambda: usuario_service
     app.dependency_overrides[get_categoria_service] = lambda: categoria_service
     app.dependency_overrides[get_movimiento_service] = lambda: movimiento_service
     app.dependency_overrides[get_resumen_service] = lambda: resumen_service
+    app.dependency_overrides[get_analitica_service] = lambda: analitica_service
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+

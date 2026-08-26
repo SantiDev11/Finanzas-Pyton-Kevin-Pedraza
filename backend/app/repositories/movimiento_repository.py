@@ -203,3 +203,27 @@ class MovimientoRepository:
         with get_db_cursor(self._connection) as cursor:
             cursor.execute(sql, (id_usuario, inicio, fin_exclusivo))
             return cursor.fetchone()
+
+    def list_gastos_por_usuario(self, id_usuario: int) -> List[Dict[str, Any]]:
+        """
+        Obtiene todos los gastos de un usuario para análisis estadístico.
+
+        Devuelve únicamente los campos necesarios para predicción y anomalías,
+        evitando transferir datos innecesarios. Solo gastos (tipo='gasto').
+        """
+        sql = """
+            SELECT
+                m.id_movimiento,
+                m.fecha,
+                m.monto,
+                m.id_categoria,
+                m.descripcion
+            FROM ingresos_gastos m
+            WHERE m.id_usuario = %s
+              AND m.tipo = 'gasto'
+            ORDER BY m.fecha ASC
+        """
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_usuario,))
+            return cursor.fetchall()
+

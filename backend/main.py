@@ -16,6 +16,7 @@ from app.routes.usuarios_routes import router as usuarios_router
 from app.routes.categorias_routes import router as categorias_router
 from app.routes.movimientos_routes import router as movimientos_router
 from app.routes.resumen_routes import router as resumen_router
+from app.routes.analitica_routes import router as analitica_router
 
 # Configuración de logging
 logging.basicConfig(
@@ -86,6 +87,7 @@ app.include_router(usuarios_router)
 app.include_router(categorias_router)
 app.include_router(movimientos_router)
 app.include_router(resumen_router)
+app.include_router(analitica_router)
 
 
 @app.get("/", status_code=status.HTTP_200_OK, tags=["Salud"])

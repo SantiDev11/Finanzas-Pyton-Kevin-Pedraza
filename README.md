@@ -16,7 +16,7 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 * **Frontend:** HTML5 Semántico, CSS3 Moderno, JavaScript Vanilla (Fetch API) y Chart.js
 * **Base de Datos:** MySQL 8.0+ (Normalización 3FN con PyMySQL y SQL parametrizado)
 * **Seguridad:** Hashing seguro de contraseñas con `bcrypt` (rounds=12)
-* **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score) *(Próximas fases)*
+* **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score)
 * **Testing:** Pytest, HTTPX (FastAPI TestClient)
 * **Control de Versiones & Despliegue:** Git, GitHub, Render
 
@@ -30,14 +30,16 @@ finanzas-personales/
 │   ├── app/
 │   │   ├── core/            # Configuración, seguridad (bcrypt), periodos, excepciones y dependencias
 │   │   ├── database/        # Conexión, transacción context manager y pool MySQL
-│   │   ├── routes/          # Controladores HTTP (Usuarios, Categorías, Movimientos, Resumen)
+│   │   ├── routes/          # Controladores HTTP (Usuarios, Categorías, Movimientos, Resumen, Analítica)
 │   │   ├── services/        # Lógica de negocio y validaciones de dominio
 │   │   ├── repositories/    # Acceso a datos (SQL puro parametrizado)
 │   │   ├── models/          # Entidades de dominio
 │   │   ├── schemas/         # Validación y contratos de API con Pydantic
-│   │   └── analytics/       # Módulo analítico y Machine Learning (Fases posteriores)
-│   ├── tests/               # Pruebas unitarias e integración (110 tests automatizados)
-│   │   ├── unit/            # Tests de servicios, periodos, movimientos y seguridad
+│   │   └── analytics/       # Módulo analítico: predicción (LinearRegression) y anomalías (Z-Score)
+│   │       ├── prediction.py  # Preparación de datos, entrenamiento y predicción
+│   │       └── anomalies.py   # Detección de gastos atípicos por Z-Score
+│   ├── tests/               # Pruebas unitarias e integración (136 tests automatizados)
+│   │   ├── unit/            # Tests de servicios, periodos, predicción, anomalías y seguridad
 │   │   └── integration/     # Tests de endpoints HTTP
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
@@ -135,7 +137,7 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 ---
 
-## 📡 Endpoints Implementados (Fases 1 a 5)
+## 📡 Endpoints Implementados (Fases 1 a 6)
 
 ### Salud y Estado
 | Método | Endpoint | Propósito | Códigos |
@@ -209,9 +211,92 @@ con los tres importes en `0.00`.
 
 ---
 
+### 🔬 Módulo Analítico (Fase 6)
+
+| Método | Endpoint | Propósito | Query Params | Códigos |
+|---|---|---|---|---|
+| `GET` | `/api/analitica/prediccion` | Predicción de gastos del próximo mes | `id_usuario` (req) | `200 OK`, `404 Not Found` |
+| `GET` | `/api/analitica/anomalias` | Detección de gastos atípicos | `id_usuario` (req) | `200 OK`, `404 Not Found` |
+
+#### Predicción de Gastos (LinearRegression)
+
+Utiliza **Regresión Lineal** (`sklearn.linear_model.LinearRegression`) para predecir el gasto total del próximo mes a partir de la serie temporal mensual de gastos del usuario.
+
+**Flujo de procesamiento (Pandas):**
+1. Se obtienen los gastos históricos del repositorio (solo `tipo='gasto'`).
+2. Se construye un `DataFrame` y se convierte la columna `fecha` a `datetime` con `pd.to_datetime()`.
+3. Se agrupan los gastos por periodo mensual (`dt.to_period('M')` + `groupby().sum()`).
+4. Se genera una variable numérica temporal (índice ordinal 0, 1, 2, …) como feature `X`.
+5. Se entrena `LinearRegression()` con `X = índice temporal`, `y = gasto mensual`.
+6. Se predice el valor del siguiente mes cronológico.
+
+**Requisitos mínimos de datos:**
+* **≥ 2 meses** de historial de gastos → regresión lineal, confianza `"media"` (2-5) o `"alta"` (≥6).
+* **1 mes** → promedio simple, confianza `"baja"`.
+* **0 meses** → `gasto_estimado = 0.0`, confianza `"baja"`.
+
+Las predicciones negativas se truncan a `0.0` (no tiene sentido económico).
+
+**Ejemplo de respuesta:**
+
+```json
+{
+    "id_usuario": 1,
+    "mes_predicho": "2026-08",
+    "gasto_estimado": 2940000.0,
+    "confianza": "alta",
+    "razon": "Calculado con Regresión Lineal (7 meses procesados).",
+    "meses_procesados": 7
+}
+```
+
+#### Detección de Anomalías (Z-Score)
+
+Detecta gastos atípicos utilizando **Z-Score agrupado por categoría**, conforme al repositorio del instructor.
+
+**Fórmula:** `z = (monto - media_categoría) / desviación_estándar_categoría`
+
+**Umbral:** `|Z| > 1.5` (definido por el ejercicio del instructor en `analitica.py` línea 54).
+
+**Flujo de procesamiento (Pandas):**
+1. Se construye un `DataFrame` con los gastos del usuario.
+2. Se agrupan por `id_categoria` para calcular `mean` y `std` con `groupby().agg()`.
+3. Se realiza `merge()` para asociar las estadísticas a cada gasto.
+4. Se calcula el Z-Score con `np.where()` para evitar división por cero.
+5. Se filtran los gastos cuyo `|z_score|` supera el umbral.
+
+**Manejo de bordes:**
+* `std = 0` (un solo gasto o todos iguales) → `z_score = 0` → no es anomalía.
+* Sin gastos → lista vacía (no es un error).
+* Sin anomalías → `total_anomalias = 0`, lista vacía con `200 OK`.
+
+**Ejemplo de respuesta:**
+
+```json
+{
+    "id_usuario": 1,
+    "umbral_z_score": 1.5,
+    "total_gastos_analizados": 7,
+    "total_anomalias": 1,
+    "anomalias": [
+        {
+            "id_movimiento": 7,
+            "fecha": "2026-07-01",
+            "monto": 5000000.0,
+            "id_categoria": 1,
+            "promedio_categoria": 831428.57,
+            "z_score": 2.27,
+            "descripcion": "Compra extraordinaria"
+        }
+    ]
+}
+```
+
+---
+
 ## 🧪 Pruebas Automatizadas
 
-La suite de pruebas contiene **110 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados y regresión:
+La suite de pruebas contiene **136 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados y regresión:
 
 ```bash
 .venv\Scripts\pytest backend/tests/ -v

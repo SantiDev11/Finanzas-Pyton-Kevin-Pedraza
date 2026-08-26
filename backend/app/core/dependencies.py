@@ -9,6 +9,7 @@ from app.services.usuario_service import UsuarioService
 from app.services.categoria_service import CategoriaService
 from app.services.movimiento_service import MovimientoService
 from app.services.resumen_service import ResumenService
+from app.services.analitica_service import AnaliticaService
 
 
 def get_db_connection() -> Generator[pymysql.Connection, None, None]:
@@ -53,3 +54,14 @@ def get_resumen_service() -> ResumenService:
         movimiento_repository=mov_repo,
         usuario_repository=usr_repo
     )
+
+
+def get_analitica_service() -> AnaliticaService:
+    """Inyector del servicio de analítica financiera."""
+    mov_repo = MovimientoRepository()
+    usr_repo = UsuarioRepository()
+    return AnaliticaService(
+        movimiento_repository=mov_repo,
+        usuario_repository=usr_repo
+    )
+
