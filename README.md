@@ -14,8 +14,9 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 
 * **Backend:** Python 3.10+ / FastAPI (Arquitectura RESTful por capas)
 * **Frontend:** HTML5 Semántico, CSS3 Moderno, JavaScript Vanilla (Fetch API) y Chart.js
-* **Base de Datos:** MySQL 8.0+ (Normalización 3FN)
-* **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score)
+* **Base de Datos:** MySQL 8.0+ (Normalización 3FN con PyMySQL y SQL parametrizado)
+* **Seguridad:** Hashing seguro de contraseñas con `bcrypt` (rounds=12)
+* **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score) *(Próximas fases)*
 * **Testing:** Pytest, HTTPX (FastAPI TestClient)
 * **Control de Versiones & Despliegue:** Git, GitHub, Render
 
@@ -27,13 +28,17 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 finanzas-personales/
 ├── backend/
 │   ├── app/
-│   │   ├── routes/          # Controladores y rutas HTTP
-│   │   ├── services/        # Lógica de negocio y dominio
-│   │   ├── repositories/    # Acceso a datos (SQL parametrizado)
-│   │   ├── models/          # Entidades internas
-│   │   ├── schemas/         # Validación de datos con Pydantic
-│   │   └── analytics/       # Módulo analítico y Machine Learning
-│   ├── tests/               # Pruebas unitarias y de integración
+│   │   ├── core/            # Configuración, seguridad (bcrypt), excepciones y dependencias
+│   │   ├── database/        # Conexión, transacción context manager y pool MySQL
+│   │   ├── routes/          # Controladores y rutas HTTP (Usuarios, Categorías)
+│   │   ├── services/        # Lógica de negocio y validaciones de dominio
+│   │   ├── repositories/    # Acceso a datos (SQL puro parametrizado)
+│   │   ├── models/          # Entidades de dominio
+│   │   ├── schemas/         # Validación y contratos de API con Pydantic
+│   │   └── analytics/       # Módulo analítico y Machine Learning (Fases posteriores)
+│   ├── tests/               # Pruebas unitarias e integración (23 tests automatizados)
+│   │   ├── unit/            # Tests de servicios y seguridad
+│   │   └── integration/     # Tests de endpoints HTTP
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
 ├── frontend/
@@ -43,8 +48,8 @@ finanzas-personales/
 │   └── js/
 │       └── app.js           # Lógica frontend
 ├── database/
-│   ├── schema.sql           # Estructura: tablas, restricciones e índices
-│   ├── seed.sql             # Datos de prueba
+│   ├── schema.sql           # Estructura: tablas, restricciones e índices (3FN)
+│   ├── seed.sql             # Datos de prueba (6+ meses de histórico)
 │   └── queries.sql          # Consultas de validación del modelo
 ├── docs/                    # Documentación técnica
 ├── .env.example             # Plantilla de variables de entorno
@@ -54,75 +59,39 @@ finanzas-personales/
 
 ---
 
-## 🗄️ Base de Datos
+## 🗄️ Base de Datos y Variables de Entorno
 
-### Requisitos
+### Configuración del Entorno (`.env`)
 
-* **MySQL 8.0 o superior.** El modelo usa restricciones `CHECK` (disponibles a partir de
-  MySQL 8.0.16) y la intercalación `utf8mb4_0900_ai_ci`, ninguna de las dos existe en
-  versiones anteriores.
-* Motor de almacenamiento **InnoDB**, necesario para las claves foráneas.
+Copia la plantilla `.env.example` a un archivo `.env` en la raíz del proyecto y configura tus credenciales de MySQL:
 
-### Creación de la base de datos
+```env
+APP_ENV=development
+APP_HOST=127.0.0.1
+APP_PORT=8000
+DEBUG=True
 
-Los scripts crean la base de datos `finanzas_personales` por sí mismos, así que basta con
-ejecutarlos en orden desde la raíz del proyecto:
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=finanzas_personales
+```
+
+> **Nota de Seguridad:** El archivo `.env` está expresamente excluido en `.gitignore`. Nunca subas credenciales reales al repositorio.
+
+### Creación del Esquema en MySQL 8.0+
 
 ```bash
 mysql -u root -p < database/schema.sql
 mysql -u root -p < database/seed.sql
 ```
 
-En Windows (PowerShell), si el cliente `mysql` no está en el `PATH`, indica la ruta completa
-al binario (por ejemplo el que incluye Laragon o XAMPP):
-
+En Windows PowerShell:
 ```powershell
 Get-Content database\schema.sql -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4
 Get-Content database\seed.sql   -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4
 ```
-
-* `schema.sql` — crea la base de datos, las tres tablas, las restricciones y los índices.
-  Es idempotente: elimina y recrea las tablas, por lo que **descarta los datos existentes**.
-* `seed.sql` — carga datos de prueba. También es idempotente: vacía las tablas antes de
-  insertar. Requiere `schema.sql` ejecutado previamente.
-* `queries.sql` — consultas de validación (totales, balance, agrupaciones y filtros por
-  fecha). No modifica datos; sirve para comprobar que el modelo responde correctamente.
-
-### Estructura
-
-Tres tablas relacionadas, normalizadas hasta la Tercera Forma Normal:
-
-| Tabla             | Contenido                                        | Clave primaria  |
-| ----------------- | ------------------------------------------------ | --------------- |
-| `usuarios`        | Personas registradas en la aplicación            | `id_usuario`    |
-| `categorias`      | Categorías de ingreso o gasto de cada usuario    | `id_categoria`  |
-| `ingresos_gastos` | Movimientos financieros registrados              | `id_movimiento` |
-
-```text
-usuarios ──1:N──> categorias ──1:N──> ingresos_gastos
-    └────────────────1:N───────────────────┘
-```
-
-Un usuario posee sus propias categorías y sus propios movimientos; cada movimiento se
-clasifica mediante una categoría que pertenece a ese mismo usuario.
-
-Detalles del diseño:
-
-* Los importes se almacenan en `DECIMAL(12,2)`, nunca en `FLOAT`, para evitar el error de
-  redondeo binario.
-* El dominio de `tipo` (`ingreso` / `gasto`) se restringe con `ENUM`.
-* Todas las claves foráneas usan `ON DELETE RESTRICT`: ningún borrado destruye historial
-  financiero de forma implícita. La baja de una cuenta se ejecuta como una transacción
-  ordenada, descrita en la sección 6 de `schema.sql`.
-* El juego de caracteres es `utf8mb4` de extremo a extremo, de modo que tildes y eñes
-  (á, é, í, ó, ú, ñ) se almacenan y se recuperan sin pérdida.
-
-### Credenciales
-
-Los scripts no contienen ninguna credencial. Copia `.env.example` a `.env` y ajusta ahí los
-datos de conexión; `.env` está excluido del control de versiones. Los valores de
-`contrasena_hash` incluidos en `seed.sql` son cadenas ficticias con formato de bcrypt y no
-corresponden a ninguna contraseña real.
 
 ---
 
@@ -130,11 +99,9 @@ corresponden a ninguna contraseña real.
 
 ### 1. Requisitos Previos
 * Python 3.10 o superior instalado.
-* Git instalado.
+* MySQL 8.0 o superior en ejecución.
 
 ### 2. Creación y Activación del Entorno Virtual
-
-En la raíz del proyecto o dentro del directorio `backend/`:
 
 **En Windows (PowerShell):**
 ```powershell
@@ -150,32 +117,39 @@ source .venv/bin/activate
 
 ### 3. Instalación de Dependencias
 
-Con el entorno virtual activado:
 ```bash
 pip install -r backend/requirements.txt
 ```
 
 ### 4. Ejecución del Servidor Backend
 
-Navega a la carpeta `backend` y ejecuta:
+Navega a la carpeta `backend` e inicia el servidor ASGI:
 ```bash
 cd backend
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-El servidor iniciará en: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-
-* Verificación de estado: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-* Documentación interactiva Swagger: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-* Documentación alternativa Redoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+* **API Root:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+* **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+* **Documentación Alternativa ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
 ---
 
-## 🧪 Ejecución de Pruebas Automatizadas
+## 📡 Endpoints Implementados (Fase 3)
 
-Para correr la suite de pruebas con `pytest`:
+| Método | Endpoint | Propósito | Request Body (JSON) | Códigos de Respuesta |
+|---|---|---|---|---|
+| `GET` | `/` | Health check de la API | Ninguno | `200 OK` |
+| `POST` | `/api/usuarios` | Registro de nuevo usuario | `{"nombre": str, "correo": str, "contrasena": str}` | `201 Created`, `400`, `409 Conflict`, `422` |
+| `POST` | `/api/categorias` | Creación de categoría | `{"nombre": str, "tipo": "ingreso"\|"gasto", "id_usuario": int}` | `201 Created`, `400`, `404 Not Found`, `409 Conflict`, `422` |
+| `GET` | `/api/categorias?id_usuario=` | Listado de categorías de un usuario | Ninguno (Query Param: `id_usuario`) | `200 OK`, `400`, `404 Not Found` |
+
+---
+
+## 🧪 Pruebas Automatizadas
+
+La suite de pruebas incluye tests unitarios de seguridad y servicios, así como tests de integración sobre los endpoints HTTP usando `pytest` y `TestClient`:
 
 ```bash
-cd backend
-pytest -v
+.venv\Scripts\pytest backend/tests/ -v
 ```
