@@ -65,9 +65,10 @@ class InMemoryUsuarioRepository(UsuarioRepository):
 class InMemoryCategoriaRepository(CategoriaRepository):
     """Repositorio en memoria para categorías en tests aislados."""
 
-    def __init__(self):
+    def __init__(self, movimiento_repo=None):
         super().__init__(connection=None)
         self.categorias: Dict[int, Dict[str, Any]] = {}
+        self.movimiento_repo = movimiento_repo
         self._next_id = 1
 
     def create(self, nombre: str, tipo: str, id_usuario: int) -> Dict[str, Any]:
@@ -96,6 +97,40 @@ class InMemoryCategoriaRepository(CategoriaRepository):
                 and cat["nombre"].lower() == nombre.lower()
             ):
                 return True
+        return False
+
+    def exists_by_user_type_name_excluding_id(
+        self, id_usuario: int, tipo: str, nombre: str, exclude_id: int
+    ) -> bool:
+        for cat in self.categorias.values():
+            if (
+                cat["id_usuario"] == id_usuario
+                and cat["tipo"] == tipo
+                and cat["nombre"].lower() == nombre.lower()
+                and cat["id_categoria"] != exclude_id
+            ):
+                return True
+        return False
+
+    def update(self, id_categoria: int, nombre: str, tipo: str) -> Dict[str, Any]:
+        if id_categoria not in self.categorias:
+            raise KeyError("Categoría no encontrada")
+        self.categorias[id_categoria]["nombre"] = nombre
+        self.categorias[id_categoria]["tipo"] = tipo
+        return self.categorias[id_categoria]
+
+    def delete(self, id_categoria: int) -> bool:
+        if id_categoria in self.categorias:
+            del self.categorias[id_categoria]
+            return True
+        return False
+
+    def has_movimientos(self, id_categoria: int) -> bool:
+        if self.movimiento_repo and hasattr(self.movimiento_repo, "movimientos"):
+            return any(
+                m["id_categoria"] == id_categoria
+                for m in self.movimiento_repo.movimientos.values()
+            )
         return False
 
 
@@ -216,6 +251,36 @@ class InMemoryMovimientoRepository(MovimientoRepository):
         )
         return {"total_ingresos": total_ingresos, "total_gastos": total_gastos}
 
+    def get_categoria_mas_costosa_periodo(
+        self, id_usuario: int, inicio: date, fin_exclusivo: date
+    ) -> Optional[str]:
+        gastos = [
+            m for m in self.movimientos.values()
+            if m["id_usuario"] == id_usuario and m["tipo"] == "gasto" and inicio <= m["fecha"] < fin_exclusivo
+        ]
+        if not gastos:
+            return None
+        totales_por_cat: Dict[str, Decimal] = {}
+        for g in gastos:
+            nombre = g.get("categoria") or "Categoría"
+            totales_por_cat[nombre] = totales_por_cat.get(nombre, Decimal("0")) + Decimal(str(g["monto"]))
+        ordenados = sorted(totales_por_cat.items(), key=lambda item: (-item[1], item[0]))
+        return ordenados[0][0] if ordenados else None
+
+    def get_categoria_mas_costosa_historico(self, id_usuario: int) -> Optional[str]:
+        gastos = [
+            m for m in self.movimientos.values()
+            if m["id_usuario"] == id_usuario and m["tipo"] == "gasto"
+        ]
+        if not gastos:
+            return None
+        totales_por_cat: Dict[str, Decimal] = {}
+        for g in gastos:
+            nombre = g.get("categoria") or "Categoría"
+            totales_por_cat[nombre] = totales_por_cat.get(nombre, Decimal("0")) + Decimal(str(g["monto"]))
+        ordenados = sorted(totales_por_cat.items(), key=lambda item: (-item[1], item[0]))
+        return ordenados[0][0] if ordenados else None
+
     def list_gastos_por_usuario(self, id_usuario: int) -> List[Dict[str, Any]]:
         """Réplica en memoria de la consulta de gastos para analítica."""
         gastos = [
@@ -260,7 +325,10 @@ def fake_categoria_repo() -> InMemoryCategoriaRepository:
 
 @pytest.fixture
 def fake_movimiento_repo(fake_categoria_repo) -> InMemoryMovimientoRepository:
-    return InMemoryMovimientoRepository(categoria_repo=fake_categoria_repo)
+    mov_repo = InMemoryMovimientoRepository(categoria_repo=fake_categoria_repo)
+    fake_categoria_repo.movimiento_repo = mov_repo
+    return mov_repo
+
 
 
 @pytest.fixture

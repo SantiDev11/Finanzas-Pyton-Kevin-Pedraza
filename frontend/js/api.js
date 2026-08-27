@@ -185,6 +185,19 @@
             /** POST /api/categorias */
             crear: function (datos) {
                 return solicitar(CONFIG.RUTAS.CATEGORIAS, { metodo: "POST", cuerpo: datos });
+            },
+            /** PUT /api/categorias/{id} */
+            actualizar: function (idCategoria, datos) {
+                return solicitar(CONFIG.RUTAS.CATEGORIAS + "/" + idCategoria, {
+                    metodo: "PUT",
+                    cuerpo: datos
+                });
+            },
+            /** DELETE /api/categorias/{id} */
+            eliminar: function (idCategoria) {
+                return solicitar(CONFIG.RUTAS.CATEGORIAS + "/" + idCategoria, {
+                    metodo: "DELETE"
+                });
             }
         },
 

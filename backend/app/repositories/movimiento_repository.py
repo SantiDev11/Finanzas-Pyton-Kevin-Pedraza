@@ -227,3 +227,48 @@ class MovimientoRepository:
             cursor.execute(sql, (id_usuario,))
             return cursor.fetchall()
 
+    def get_categoria_mas_costosa_periodo(
+        self, id_usuario: int, inicio: date, fin_exclusivo: date
+    ) -> Optional[str]:
+        """
+        Devuelve el nombre de la categoría con mayor gasto dentro de un periodo.
+        Si no hay gastos en el periodo, devuelve None.
+        """
+        sql = """
+            SELECT c.nombre
+            FROM ingresos_gastos m
+            INNER JOIN categorias c ON m.id_categoria = c.id_categoria
+            WHERE m.id_usuario = %s
+              AND m.tipo = 'gasto'
+              AND m.fecha >= %s
+              AND m.fecha < %s
+            GROUP BY c.id_categoria, c.nombre
+            ORDER BY SUM(m.monto) DESC, c.nombre ASC
+            LIMIT 1
+        """
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_usuario, inicio, fin_exclusivo))
+            row = cursor.fetchone()
+            return row["nombre"] if row else None
+
+    def get_categoria_mas_costosa_historico(self, id_usuario: int) -> Optional[str]:
+        """
+        Devuelve el nombre de la categoría con mayor gasto en todo el histórico del usuario.
+        Si no hay gastos, devuelve None.
+        """
+        sql = """
+            SELECT c.nombre
+            FROM ingresos_gastos m
+            INNER JOIN categorias c ON m.id_categoria = c.id_categoria
+            WHERE m.id_usuario = %s
+              AND m.tipo = 'gasto'
+            GROUP BY c.id_categoria, c.nombre
+            ORDER BY SUM(m.monto) DESC, c.nombre ASC
+            LIMIT 1
+        """
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_usuario,))
+            row = cursor.fetchone()
+            return row["nombre"] if row else None
+
+

@@ -31,6 +31,31 @@ class CategoriaCreate(BaseModel):
     }
 
 
+class CategoriaUpdate(BaseModel):
+    """
+    Esquema para la edición de una categoría existente.
+    """
+    nombre: str = Field(..., min_length=2, max_length=60, description="Nuevo nombre de la categoría")
+    tipo: Literal["ingreso", "gasto"] = Field(..., description="Tipo de categoría (ingreso o gasto)")
+
+    @field_validator("nombre")
+    @classmethod
+    def validate_nombre_trim(cls, v: str) -> str:
+        trimmed = v.strip()
+        if len(trimmed) < 2:
+            raise ValueError("El nombre de la categoría debe tener al menos 2 caracteres no vacíos.")
+        return trimmed
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "nombre": "Supermercado",
+                "tipo": "gasto"
+            }
+        }
+    }
+
+
 class CategoriaResponse(BaseModel):
     """Esquema de respuesta de una categoría."""
     id_categoria: int
@@ -49,3 +74,4 @@ class CategoriaResponse(BaseModel):
             }
         }
     }
+

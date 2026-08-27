@@ -1,8 +1,8 @@
-from typing import List
-from fastapi import APIRouter, Depends, status
+from typing import List, Dict
+from fastapi import APIRouter, Depends, Path, status
 
 from app.core.dependencies import get_categoria_service, get_current_user
-from app.schemas.categoria import CategoriaCreate, CategoriaResponse
+from app.schemas.categoria import CategoriaCreate, CategoriaUpdate, CategoriaResponse
 from app.schemas.usuario import UsuarioResponse
 from app.services.categoria_service import CategoriaService
 
@@ -53,3 +53,52 @@ def listar_categorias(
     Endpoint para consultar las categorías del usuario autenticado.
     """
     return service.listar_por_usuario(usuario.id_usuario)
+
+
+@router.put(
+    "/{id_categoria}",
+    response_model=CategoriaResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Actualizar una categoría propia",
+    description=(
+        "Modifica el nombre o tipo de una categoría existente del usuario autenticado. "
+        "Rechaza modificaciones sobre categorías ajenas o nombres duplicados."
+    )
+)
+def actualizar_categoria(
+    id_categoria: int = Path(..., description="ID de la categoría a actualizar", ge=1),
+    payload: CategoriaUpdate = ...,
+    usuario: UsuarioResponse = Depends(get_current_user),
+    service: CategoriaService = Depends(get_categoria_service)
+) -> CategoriaResponse:
+    """
+    Endpoint para editar una categoría existente.
+    """
+    return service.actualizar_categoria(
+        id_categoria=id_categoria,
+        data=payload,
+        id_usuario=usuario.id_usuario
+    )
+
+
+@router.delete(
+    "/{id_categoria}",
+    response_model=Dict[str, str],
+    status_code=status.HTTP_200_OK,
+    summary="Eliminar una categoría propia",
+    description=(
+        "Elimina una categoría del usuario autenticado si no tiene movimientos "
+        "asociados (integridad referencial)."
+    )
+)
+def eliminar_categoria(
+    id_categoria: int = Path(..., description="ID de la categoría a eliminar", ge=1),
+    usuario: UsuarioResponse = Depends(get_current_user),
+    service: CategoriaService = Depends(get_categoria_service)
+) -> Dict[str, str]:
+    """
+    Endpoint para eliminar una categoría propia.
+    """
+    service.eliminar_categoria(id_categoria=id_categoria, id_usuario=usuario.id_usuario)
+    return {"mensaje": f"Categoría con ID {id_categoria} eliminada exitosamente."}
+

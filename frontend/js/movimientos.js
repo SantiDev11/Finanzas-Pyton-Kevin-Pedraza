@@ -265,6 +265,12 @@
         if (!nodos.fecha.value) {
             return "La fecha del movimiento es obligatoria.";
         }
+        if (nodos.tipo.value === "gasto") {
+            var hoy = UI.fechaHoy();
+            if (nodos.fecha.value > hoy) {
+                return "La fecha de un gasto no puede ser futura.";
+            }
+        }
         return null;
     }
 

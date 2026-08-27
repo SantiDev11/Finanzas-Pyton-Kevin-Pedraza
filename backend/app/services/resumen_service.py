@@ -66,7 +66,7 @@ class ResumenService:
         totales: Optional[dict],
     ) -> ResumenFinancieroResponse:
         """
-        Normaliza los totales agregados y calcula el balance del periodo.
+        Normaliza los totales agregados y calcula el balance y las métricas financieras del periodo.
 
         Un periodo sin movimientos no es un error: la agregación devuelve ceros y
         el resumen se emite con total_ingresos, total_gastos y balance en 0.00.
@@ -78,12 +78,36 @@ class ResumenService:
         # El balance puede ser negativo cuando los gastos superan a los ingresos.
         balance = total_ingresos - total_gastos
 
+        # Porcentaje de ahorro: (ingresos - gastos) / ingresos * 100
+        # Si total_ingresos == 0, se define 0.0 para evitar división por cero.
+        if total_ingresos > _CERO:
+            porcentaje_ahorro = float(
+                round(((total_ingresos - total_gastos) / total_ingresos) * Decimal("100"), 2)
+            )
+        else:
+            porcentaje_ahorro = 0.0
+
+        # Categoría con mayor gasto en el mes consultado
+        categoria_mes = self._movimiento_repo.get_categoria_mas_costosa_periodo(
+            id_usuario=id_usuario,
+            inicio=periodo.inicio,
+            fin_exclusivo=periodo.fin_exclusivo,
+        )
+
+        # Categoría con mayor gasto en todo el histórico
+        categoria_historico = self._movimiento_repo.get_categoria_mas_costosa_historico(
+            id_usuario=id_usuario
+        )
+
         return ResumenFinancieroResponse(
             id_usuario=id_usuario,
             mes=periodo.mes,
             total_ingresos=total_ingresos,
             total_gastos=total_gastos,
             balance=balance,
+            porcentaje_ahorro=porcentaje_ahorro,
+            categoria_mas_costosa_mes=categoria_mes,
+            categoria_mas_costosa_historico=categoria_historico,
         )
 
 

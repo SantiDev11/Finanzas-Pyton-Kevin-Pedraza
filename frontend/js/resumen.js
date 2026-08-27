@@ -23,7 +23,8 @@
             ingresos: document.getElementById("valor-ingresos"),
             gastos: document.getElementById("valor-gastos"),
             balance: document.getElementById("valor-balance"),
-            tarjetaBalance: document.getElementById("tarjeta-balance")
+            tarjetaBalance: document.getElementById("tarjeta-balance"),
+            notaBalance: document.getElementById("nota-balance")
         };
     }
 
@@ -68,6 +69,13 @@
         var balance = UI.aNumero(resumen.balance);
         if (nodos.tarjetaBalance) {
             nodos.tarjetaBalance.classList.toggle("es-negativo", balance !== null && balance < 0);
+        }
+
+        if (nodos.notaBalance) {
+            var pct = (resumen.porcentaje_ahorro !== undefined && resumen.porcentaje_ahorro !== null)
+                ? resumen.porcentaje_ahorro
+                : 0;
+            nodos.notaBalance.textContent = "Ahorro: " + pct + "% del ingreso";
         }
 
         UI.ocultarEstado(nodos.estado);

@@ -1,665 +1,379 @@
-# 📊 Aplicación Web de Finanzas Personales con Dashboard Analítico
+# Finanzas Personales
 
-Aplicación web full-stack para el registro, control y análisis inteligente de finanzas personales, estructurada con arquitectura limpia por capas y preparada para despliegue continuo.
-
----
-
-## 🎯 Objetivo General
-
-Proveer una solución integral que permita a los usuarios registrar sus movimientos financieros (ingresos y gastos) clasificados por categorías, visualizando su balance en tiempo real, evaluando su comportamiento financiero y obteniendo proyecciones predictivas basadas en modelos de Machine Learning.
+Aplicación web full-stack para el registro, control, visualización y análisis inteligente de finanzas personales, estructurada con arquitectura limpia por capas y preparada técnicamente para despliegue continuo.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Descripción
 
-* **Backend:** Python 3.10+ / FastAPI (Arquitectura RESTful por capas)
-* **Frontend:** HTML5 Semántico, CSS3 Moderno (Grid, Flexbox, variables) y JavaScript Vanilla (Fetch API), sin frameworks ni dependencias externas
-* **Base de Datos:** MySQL 8.0+ (Normalización 3FN con PyMySQL y SQL parametrizado)
-* **Seguridad:** Hashing de contraseñas con `bcrypt` (rounds=12) y autenticación por **JWT** (`PyJWT`, HS256, con expiración)
-* **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score)
-* **Testing:** Pytest, HTTPX (FastAPI TestClient)
-* **Control de Versiones & Despliegue:** Git, GitHub, Render
+**Finanzas Personales** es una solución integral diseñada para que los usuarios gestionen sus finanzas de manera ordenada, segura y predecible. Permite registrar movimientos de ingresos y gastos categorizados, consultar balances y totales en tiempo real expresados exclusivamente en pesos colombianos (COP), proyectar el gasto del próximo mes utilizando modelos de Machine Learning (Regresión Lineal) e identificar automáticamente gastos atípicos o anomalías mediante técnicas estadísticas (Z-Score por categoría).
+
+La plataforma incorpora autenticación completa con contraseñas protegidas mediante `bcrypt` y sesiones stateless basadas en tokens `JWT` con expiración, garantizando aislamiento estricto entre usuarios en todas las capas del sistema.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Tecnologías
+
+* **Backend:** Python 3.10+ / FastAPI (Framework ASGI de alto rendimiento)
+* **Frontend:** HTML5 Semántico, CSS3 Moderno (Custom Properties, CSS Grid, Flexbox) y JavaScript Vanilla (Fetch API y Chart.js vía CDN), sin frameworks pesados ni empaquetadores
+* **Base de Datos:** MySQL 8.0+ (Motor InnoDB, normalización en 3FN, claves foráneas compuestas e integridad referencial)
+* **Seguridad:** Hashing de contraseñas con `bcrypt` (coste 12), tokens de acceso firmados con `PyJWT` (algoritmo `HS256`, expiración configurable y clave `SECRET_KEY`)
+* **Análisis de Datos & ML:** `Pandas` (manipulación y series temporales), `Scikit-learn` (`LinearRegression` para predicción de gasto) y `NumPy` / `SciPy` (análisis estadístico Z-Score)
+* **Testing Automatizado:** `pytest` (171 pruebas automatizadas unitarias y de integración) y `HTTPX` (`TestClient` de FastAPI)
+* **Control de Versiones & Deployment:** Git, GitHub, Render (Static Site + Web Service)
+
+---
+
+## Arquitectura
+
+El sistema implementa una **Arquitectura Limpia por Capas** con separación estricta de responsabilidades y flujo unidireccional de dependencias:
+
+```text
+       [ Navegador Web / Frontend ]
+                    │
+            HTTP / REST (JSON)
+                    │
+                    ▼
+         [ 1. Capa de Rutas (Routes) ]
+                    │
+                    ▼
+       [ 2. Capa de Servicios (Services) ]
+          │                          │
+          ▼                          ▼
+[ 3. Repositorios (SQL) ]    [ Módulo Analítico ]
+          │                  (Pandas / Scikit-learn)
+          ▼
+    [ MySQL 8.0+ ]
+```
+
+### Reglas Arquitectónicas Cumplidas:
+1. **Sin SQL en Rutas ni en Analítica:** Las consultas SQL residen exclusivamente en los repositorios (`app/repositories/`).
+2. **Sin Lógica de Negocio en Repositorios:** Los repositorios solo ejecutan consultas parametrizadas y mapean tuplas; las validaciones y cálculos residen en los servicios (`app/services/`).
+3. **Flujo de Analítica:** `Routes` → `AnalyticsService` → `MovimientoRepository` (consulta gastos) → `prediction.py` / `anomalies.py` (Pandas & Scikit-learn).
+4. **Independencia del Frontend:** El frontend consume la API REST de forma agnóstica vía `fetch()`, manejando el token JWT en cabeceras HTTP.
+
+---
+
+## Estructura del proyecto
 
 ```text
 finanzas-personales/
 ├── backend/
 │   ├── app/
-│   │   ├── core/            # Configuración, seguridad (bcrypt + JWT), periodos, excepciones y dependencias
-│   │   ├── database/        # Conexión, transacción context manager y pool MySQL
-│   │   ├── routes/          # Controladores HTTP (Auth, Usuarios, Categorías, Movimientos, Resumen, Analítica)
-│   │   ├── services/        # Lógica de negocio y validaciones de dominio
-│   │   ├── repositories/    # Acceso a datos (SQL puro parametrizado)
-│   │   ├── models/          # Entidades de dominio
-│   │   ├── schemas/         # Validación y contratos de API con Pydantic
-│   │   └── analytics/       # Módulo analítico: predicción (LinearRegression) y anomalías (Z-Score)
-│   │       ├── prediction.py  # Preparación de datos, entrenamiento y predicción
-│   │       └── anomalies.py   # Detección de gastos atípicos por Z-Score
-│   ├── tests/               # Pruebas unitarias e integración (171 tests automatizados)
-│   │   ├── unit/            # Tests de servicios, periodos, predicción, anomalías y seguridad
-│   │   └── integration/     # Tests de endpoints HTTP, incluida la autenticación (test_api_auth.py)
-│   ├── requirements.txt     # Dependencias de Python
-│   └── main.py              # Punto de entrada de FastAPI
+│   │   ├── analytics/           # Módulo predictivo y estadístico
+│   │   │   ├── anomalies.py     # Detección de anomalías por Z-Score
+│   │   │   └── prediction.py    # Predicción de gastos con LinearRegression
+│   │   ├── core/                # Configuración, seguridad (bcrypt + JWT), excepciones y dependencias
+│   │   │   ├── config.py        # Carga de variables de entorno y validaciones
+│   │   │   ├── dependencies.py  # Inyección de dependencias (get_current_user)
+│   │   │   ├── exceptions.py    # Manejadores globales de errores HTTP
+│   │   │   ├── periodo.py       # Utilidades y validación de periodos mensuales
+│   │   │   └── security.py      # Hashing bcrypt y generación/validación de JWT
+│   │   ├── database/            # Conexión, pooling y transacciones MySQL
+│   │   │   ├── connection.py    # Pool de conexiones PyMySQL
+│   │   │   └── session.py       # Context manager de sesión/transacción
+│   │   ├── models/              # Clases de entidad de dominio
+│   │   ├── repositories/        # Consultas SQL parametrizadas a base de datos
+│   │   ├── routes/              # Controladores y endpoints REST de FastAPI
+│   │   ├── schemas/             # Contratos y validaciones de datos con Pydantic
+│   │   └── services/            # Lógica de negocio y reglas de dominio
+│   ├── tests/                   # Suite de pruebas automatizadas (171 tests)
+│   │   ├── conftest.py          # Fixtures y repositorios en memoria (fakes)
+│   │   ├── integration/         # Pruebas de endpoints HTTP y flujos completos
+│   │   └── unit/                # Pruebas unitarias de servicios, periodos, seguridad y ML
+│   ├── main.py                  # Inicialización y configuración de la app FastAPI
+│   └── requirements.txt         # Dependencias de Python fijadas
 ├── frontend/
-│   ├── index.html           # Página de acceso: inicio de sesión y registro
-│   ├── dashboard.html       # Panel: movimientos, categorías, resumen y análisis
-│   ├── css/
-│   │   ├── reset.css        # Normalización mínima del navegador
-│   │   ├── variables.css    # Design tokens (color, espaciado, tipografía)
-│   │   ├── layout.css       # Cabecera, navegación, rejillas y pie
-│   │   ├── components.css   # Tarjetas, botones, formularios, tablas, diálogos
-│   │   └── responsive.css   # Media queries (320 px → 1440 px+)
-│   ├── js/
-│   │   ├── config.js        # Configuración única (URL de la API, rutas)
-│   │   ├── api.js           # Capa centralizada de fetch y errores
-│   │   ├── ui.js            # Formateo (COP), estados de UI, diálogos y avisos
-│   │   ├── sesion.js        # Sesión autenticada: token, usuario y cierre de sesión
-│   │   ├── login.js         # Lógica de index.html (acceso y registro)
-│   │   ├── app.js           # Lógica de dashboard.html (guardián y navegación)
-│   │   ├── dashboard.js     # Vista principal (panel)
-│   │   ├── movimientos.js   # CRUD y filtros de movimientos
-│   │   ├── categorias.js    # Alta y consulta de categorías
-│   │   ├── resumen.js       # Resumen mensual
-│   │   └── analytics.js     # Predicción y anomalías
-│   └── assets/
-│       └── favicon.svg      # Icono de la aplicación
+│   ├── assets/                  # Favicon y recursos visuales vectoriales
+│   ├── css/                     # Hojas de estilo modularizadas en Vanilla CSS
+│   │   ├── reset.css            # Normalización del navegador
+│   │   ├── variables.css        # Paleta de color, tipografía y tokens de diseño
+│   │   ├── layout.css           # Estructura visual, navegación lateral y cabeceras
+│   │   ├── components.css       # Tarjetas, botones, inputs, tablas y modales
+│   │   └── responsive.css       # Adaptaciones responsive (320px a 1920px)
+│   ├── js/                      # Lógica de cliente en Vanilla JavaScript
+│   │   ├── config.js            # Configuración central de la API y constantes
+│   │   ├── api.js               # Cliente HTTP centralizado con manejo de token y errores
+│   │   ├── ui.js                # Formateo monetario en COP, avisos y componentes UI
+│   │   ├── sesion.js            # Gestión de autenticación, token y logout
+│   │   ├── login.js             # Controlador de index.html (login y registro)
+│   │   ├── app.js               # Controlador de dashboard.html y enrutamiento
+│   │   ├── dashboard.js         # Vista general del panel y gráficos
+│   │   ├── movimientos.js       # CRUD de movimientos con filtros
+│   │   ├── categorias.js        # Gestión de categorías de ingresos y gastos
+│   │   ├── resumen.js           # Resumen financiero mensual y balance
+│   │   └── analytics.js         # Visualización de predicción y tabla de anomalías
+│   ├── index.html               # Vista de autenticación (Login / Registro)
+│   └── dashboard.html           # Vista principal del sistema
 ├── database/
-│   ├── schema.sql           # Estructura: tablas, restricciones e índices (3FN)
-│   ├── seed.sql             # Datos de prueba (6+ meses de histórico)
-│   └── queries.sql          # Consultas de validación del modelo
-├── docs/                    # Documentación técnica
-├── .env.example             # Plantilla de variables de entorno
-├── .gitignore               # Exclusiones de control de versiones
-└── README.md                # Documentación principal
+│   ├── schema.sql               # Esquema de tablas, índices, constraints y claves foráneas
+│   ├── seed.sql                 # Semilla de datos de prueba para desarrollo
+│   └── queries.sql              # Consultas de verificación del modelo
+├── docs/                        # Documentación complementaria del proyecto
+├── .env.example                 # Plantilla de variables de entorno requeridas
+├── .gitignore                   # Exclusiones de control de versiones
+└── README.md                    # Manual integral del proyecto
 ```
 
 ---
 
-## 🔐 Seguridad
+## Requisitos
 
-| Aspecto | Implementación |
-|---|---|
-| Contraseñas | `bcrypt` con coste 12 y salt aleatorio. Nunca en texto plano, nunca en las respuestas. |
-| Autenticación | JWT firmado (`HS256` por defecto) con expiración. |
-| Clave de firma | `SECRET_KEY` por variable de entorno; jamás en el repositorio. |
-| Autorización | Dependencia `get_current_user()` en todos los endpoints sensibles. |
-| Aislamiento | La identidad sale del token; `id_usuario` del cliente se ignora. |
-| Enumeración de usuarios | Mensaje de error idéntico para correo inexistente y contraseña incorrecta. |
-| SQL Injection | Consultas parametrizadas en toda la capa de repositorios. |
-| Fugas de información | Los errores del motor MySQL solo van al log; el cliente recibe mensajes genéricos. |
+Para ejecutar el proyecto localmente se requiere:
+
+* **Python:** Versión 3.10 o superior (recomendado 3.11+).
+* **MySQL Server:** Versión 8.0 o superior en ejecución.
+* **Git:** Para clonar el repositorio.
+* **Navegador Web Moderno:** Chrome, Firefox, Edge o Safari con soporte para ES6+.
 
 ---
 
-## 🗄️ Base de Datos y Variables de Entorno
+## Instalación
 
-### Configuración del Entorno (`.env`)
+Sigue estos 9 pasos exactos para configurar y levantar el proyecto desde cero:
 
-Copia la plantilla `.env.example` a un archivo `.env` en la raíz del proyecto y configura tus credenciales de MySQL:
-
-```env
-APP_ENV=development
-APP_HOST=127.0.0.1
-APP_PORT=8000
-DEBUG=True
-
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=finanzas_personales
-
-# Autenticación JWT
-SECRET_KEY=<genera la tuya, ver más abajo>
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-```
-
-`SECRET_KEY` firma los tokens de acceso. Genera una propia con:
-
+### 1. Crear entorno virtual
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(64))"
-```
-
-En **desarrollo** puede omitirse: la aplicación genera una clave efímera en
-cada arranque y avisa por log (los tokens dejan de valer al reiniciar). En
-**producción** es obligatoria y el arranque se aborta si falta.
-
-> **Nota de Seguridad:** El archivo `.env` está expresamente excluido en `.gitignore`. Nunca subas credenciales reales ni la `SECRET_KEY` al repositorio.
-
-### Creación del Esquema en MySQL 8.0+
-
-```bash
-mysql -u root -p < database/schema.sql
-mysql -u root -p < database/seed.sql
-```
-
-En Windows PowerShell:
-```powershell
-Get-Content database\schema.sql -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4
-Get-Content database\seed.sql   -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4
-```
-
----
-
-## 🚀 Guía de Inicio Rápido (Backend)
-
-### 1. Requisitos Previos
-* Python 3.10 o superior instalado.
-* MySQL 8.0 o superior en ejecución.
-
-### 2. Creación y Activación del Entorno Virtual
-
-**En Windows (PowerShell):**
-```powershell
 python -m venv .venv
-.venv\Scripts\Activate.ps1
 ```
+*En Windows (PowerShell):* `.venv\Scripts\Activate.ps1`  
+*En Linux / macOS:* `source .venv/bin/activate`
 
-**En Linux / macOS:**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 3. Instalación de Dependencias
-
+### 2. Instalar dependencias
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-### 4. Ejecución del Servidor Backend
+### 3. Configurar .env
+Copia el archivo de plantilla a la raíz del proyecto:
+```bash
+cp .env.example .env
+```
+*(En Windows PowerShell: `Copy-Item .env.example .env`)*  
+Abre `.env` y define tu contraseña de MySQL y la clave `SECRET_KEY`.
 
-Navega a la carpeta `backend` e inicia el servidor ASGI:
+### 4. Crear base de datos
+Asegúrate de que el servidor MySQL esté encendido. Si la base de datos no existe:
+```sql
+CREATE DATABASE finanzas_personales CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+```
+
+### 5. Ejecutar schema.sql
+Aplica la estructura relacional de tablas, restricciones e índices:
+```bash
+mysql -u root -p finanzas_personales < database/schema.sql
+```
+*En Windows PowerShell:*
+```powershell
+Get-Content database\schema.sql -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4 finanzas_personales
+```
+
+### 6. Ejecutar seed.sql
+Carga los datos iniciales de prueba:
+```bash
+mysql -u root -p finanzas_personales < database/seed.sql
+```
+*En Windows PowerShell:*
+```powershell
+Get-Content database\seed.sql -Raw -Encoding UTF8 | mysql -u root -p --default-character-set=utf8mb4 finanzas_personales
+```
+
+### 7. Iniciar backend
+Navega al directorio backend e inicia el servidor ASGI:
 ```bash
 cd backend
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-* **API Root:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-* **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-* **Documentación Alternativa ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-
-> `--reload` es exclusivo del desarrollo local. El comando de producción no lo
-> usa y escucha en el puerto que asigna el entorno: véase
-> [Preparación para deployment](#-preparación-para-deployment).
-
----
-
-## 🖥️ Guía de Inicio Rápido (Frontend)
-
-El frontend es HTML5 semántico, CSS y JavaScript sin frameworks ni dependencias
-externas: no necesita instalación, compilación ni gestor de paquetes. Solo debe
-servirse por HTTP (no abrirlo con `file://`), porque el navegador exige un
-origen válido para las peticiones a la API.
-
-### 1. Levantar el backend
-
-El frontend no funciona sin la API. Con el backend en marcha (ver la sección
-anterior) en `http://127.0.0.1:8000`, abre **otra terminal**.
-
-### 2. Servir el frontend
-
-Cualquier servidor estático sirve. Con el propio Python:
-
+### 8. Abrir frontend
+En otra terminal, sirve los archivos estáticos:
 ```bash
 cd frontend
 python -m http.server 5500 --bind 127.0.0.1
 ```
+Abre en tu navegador: [http://127.0.0.1:5500/index.html](http://127.0.0.1:5500/index.html).
 
-Y abre [http://127.0.0.1:5500/index.html](http://127.0.0.1:5500/index.html),
-que es la página de acceso.
-
-> Con la extensión **Live Server** de VS Code (puerto 5500 por defecto) funciona
-> igual: basta con abrir `frontend/index.html` con *Open with Live Server*.
-
-### 3. Configuración de la API
-
-La URL de la API se declara **en un único lugar** de todo el frontend, la
-primera constante de `frontend/js/config.js`, que comparten las dos páginas:
-
-```js
-var URL_API_POR_DEFECTO = "http://127.0.0.1:8000";
+### 9. Ejecutar tests
+Ejecuta la suite completa de pruebas automatizadas:
+```bash
+pytest backend/tests -v
 ```
-
-El resto del código la consume a través de `js/api.js`. Para apuntar a otro
-entorno (por ejemplo la URL pública de Render) basta con cambiar esa línea; no
-hay ninguna otra URL de API repartida por los archivos. Opcionalmente, una
-página puede sobrescribirla sin tocar el JavaScript añadiendo
-`<meta name="api-base-url" content="...">` en su `<head>`.
-
-El frontend **no contiene ningún secreto**: no maneja claves de API, tokens ni
-credenciales de MySQL. Solo conoce la URL pública del backend.
-
-### 4. Conexión con el backend (CORS)
-
-El backend restringe los orígenes permitidos mediante `CORS_ORIGINS`. Los
-puertos habituales de desarrollo ya vienen contemplados en `.env.example`:
-
-```env
-CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:5500","http://localhost:5500","http://127.0.0.1:8000"]
-```
-
-Si sirves el frontend en otro puerto, añádelo a esa lista en tu `.env`.
-
-### 5. Acceso, autenticación y sesión
-
-El frontend son **dos páginas**:
-
-| Página | Contenido |
-|---|---|
-| `index.html` | Acceso: formularios de inicio de sesión y de registro. Es el punto de entrada. |
-| `dashboard.html` | Toda la lógica del proyecto: panel, movimientos, categorías, resumen y análisis. |
-
-`dashboard.html` no muestra nada sin una sesión válida: al cargar valida el
-token contra `GET /api/auth/me` y, si no es correcto, redirige a `index.html`.
-A la inversa, `index.html` continúa automáticamente al panel cuando el token
-guardado sigue siendo válido.
-
-#### Flujo completo
-
-```text
-REGISTRO  ->  POST /api/usuarios      (contraseña hasheada con bcrypt)
-LOGIN     ->  POST /api/auth/login    (verifica el hash y emite un JWT)
-FRONTEND  ->  guarda el token en sessionStorage
-API       ->  cada petición envía  Authorization: Bearer <token>
-BACKEND   ->  valida firma y expiración, y deduce el usuario del token
-LOGOUT    ->  el frontend descarta el token y vuelve al acceso
-```
-
-* **Crear cuenta** — `POST /api/usuarios`. La API cifra la contraseña con
-  bcrypt (coste 12) y nunca la almacena en texto plano. Tras el alta, el
-  frontend inicia sesión automáticamente con esas mismas credenciales.
-* **Iniciar sesión** — correo y contraseña van en el **cuerpo** de
-  `POST /api/auth/login`, nunca en la URL. El backend compara la contraseña
-  con el hash almacenado y, si coincide, devuelve un JWT firmado.
-* **Cerrar sesión** — el frontend descarta el token, oculta el panel y vuelve
-  a `index.html`.
-
-#### El token JWT
-
-El token contiene **solo identidad y tiempos**: nunca la contraseña ni el hash.
-
-| Campo | Contenido |
-|---|---|
-| `sub` | Identificador del usuario (en cadena, como exige el RFC 7519) |
-| `correo` | Correo del usuario, para trazabilidad |
-| `iat` | Momento de emisión |
-| `exp` | Momento de expiración |
-
-Se firma con `SECRET_KEY` usando `ALGORITHM` (por defecto `HS256`) y caduca a
-los `ACCESS_TOKEN_EXPIRE_MINUTES` minutos (por defecto 60). Un token con la
-firma alterada, caducado, o de un usuario que ya no existe, se rechaza con
-`401`.
-
-#### Dónde se guarda el token, y por qué
-
-El token se guarda en **`sessionStorage`**. La alternativa a prueba de XSS
-sería una cookie `httpOnly`, que el JavaScript no puede leer; se ha descartado
-porque el frontend y la API son **dos servicios en orígenes distintos**, y una
-cookie entre orígenes exigiría `SameSite=None; Secure` más protección CSRF
-propia — un cambio de arquitectura que excede esta fase.
-
-Las mitigaciones que sí se aplican:
-
-* `sessionStorage` y no `localStorage`: el token muere al cerrar la pestaña,
-  en lugar de quedarse en disco indefinidamente;
-* el token **nunca** se escribe en consola ni se muestra en la interfaz;
-* el token **nunca** viaja en la URL, solo en la cabecera `Authorization`;
-* todo el renderizado usa `textContent`, nunca `innerHTML`: no hay ningún
-  punto por el que inyectar el script que leería el token;
-* los tokens caducan, así que uno robado tiene una ventana de uso limitada.
-
-> **Riesgo residual conocido.** Un XSS en el frontend podría leer el token de
-> `sessionStorage`. Se acepta de forma consciente y documentada; migrar a
-> cookies `httpOnly` con CSRF es la evolución natural cuando el despliegue
-> permita compartir dominio entre frontend y API.
-
-#### Aislamiento por usuario
-
-La identidad **siempre** procede del token. Los endpoints ya no aceptan
-`id_usuario` como parámetro:
-
-* enviarlo en la query string **se ignora**;
-* enviarlo en el cuerpo JSON **se ignora**;
-* no existe forma de leer, crear, modificar ni borrar datos de otra cuenta.
-
-Las comprobaciones de pertenencia siguen además en la capa de servicio y en la
-propia base de datos (la clave foránea compuesta `fk_movimientos_categoria`
-garantiza a nivel de motor que la categoría de un movimiento es del mismo
-usuario).
-
-### 6. Moneda
-
-Toda la interfaz muestra los importes en **pesos colombianos**, con
-`Intl.NumberFormat("es-CO", { style: "currency", currency: "COP",
-currencyDisplay: "code" })`, definido una sola vez en `js/ui.js`. El resultado
-es `COP 1.500.000,00`: nunca se usa el símbolo `$`, ni `USD`, ni `US$`.
-
-Es solo formato de presentación. Lo que se envía a la API sigue siendo un
-número sin separadores ni símbolos, y la columna `monto` de MySQL continúa
-siendo `DECIMAL(12,2)`. Por eso se conservan los dos decimales: redondear a
-pesos enteros mostraría una cifra distinta de la almacenada.
 
 ---
 
-## 📡 Endpoints Implementados
+## Variables de entorno
 
-> **Todos los endpoints marcados con 🔒 exigen la cabecera
-> `Authorization: Bearer <token>`.** Sin ella responden `401 Unauthorized` con
-> `WWW-Authenticate: Bearer`. El usuario se deduce del token: **ningún endpoint
-> acepta ya `id_usuario` como parámetro**.
+El archivo `.env` en la raíz contiene las siguientes variables:
 
-### Salud y Estado
-| Método | Endpoint | Propósito | Códigos |
-|---|---|---|---|
-| `GET` | `/` | Health check de la API | `200 OK` |
+| Variable | Descripción | Valor por Defecto / Ejemplo |
+|---|---|---|
+| `APP_ENV` | Entorno de ejecución (`development` o `production`) | `development` |
+| `APP_HOST` | Host local de FastAPI | `127.0.0.1` |
+| `APP_PORT` | Puerto local de FastAPI | `8000` |
+| `DEBUG` | Modo depuración | `True` |
+| `DB_HOST` | Host de la base de datos MySQL | `127.0.0.1` |
+| `DB_PORT` | Puerto de MySQL | `3306` |
+| `DB_USER` | Usuario de MySQL | `root` |
+| `DB_PASSWORD` | Contraseña de MySQL | *(definir según entorno)* |
+| `DB_NAME` | Nombre de la base de datos | `finanzas_personales` |
+| `CORS_ORIGINS` | Lista JSON de orígenes web permitidos | `["http://127.0.0.1:5500", "http://localhost:5500"]` |
+| `SECRET_KEY` | Clave secreta para firmar tokens JWT | *(Generar con `secrets.token_urlsafe(64)`)* |
+| `ALGORITHM` | Algoritmo de firma criptográfica | `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Tiempo de vida del token de acceso | `60` |
 
-### Autenticación (Fase 8A)
-| Método | Endpoint | Propósito | Request Body (JSON) | Códigos |
-|---|---|---|---|---|
-| `POST` | `/api/auth/login` | Verifica credenciales y emite un JWT | `{"correo": str, "contrasena": str}` | `200`, `401`, `422` |
-| `GET` 🔒 | `/api/auth/me` | Usuario del token; valida la sesión | Ninguno | `200`, `401` |
+> **Seguridad:** El archivo `.env` está estrictamente ignorado por Git en `.gitignore`. Nunca se versionan credenciales reales en el repositorio.
 
-Respuesta de `POST /api/auth/login`:
+---
 
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "usuario": { "id_usuario": 1, "nombre": "Ana Torres", "correo": "ana@example.com" }
-}
-```
+## MySQL
 
-Un `401` en el login usa **el mismo mensaje** tanto si el correo no existe como
-si la contraseña es incorrecta, para no permitir enumerar las cuentas
-registradas.
+El modelo de datos está normalizado en Tercera Forma Normal (3FN) con motor InnoDB y juego de caracteres `utf8mb4`:
 
-### Usuarios y Categorías
-| Método | Endpoint | Propósito | Request Body (JSON) | Códigos |
-|---|---|---|---|---|
-| `POST` | `/api/usuarios` | Registro de nuevo usuario | `{"nombre": str, "correo": str, "contrasena": str}` | `201`, `400`, `409`, `422` |
-| `POST` 🔒 | `/api/categorias` | Crea una categoría en la cuenta autenticada | `{"nombre": str, "tipo": "ingreso"\|"gasto"}` | `201`, `400`, `401`, `409`, `422` |
-| `GET` 🔒 | `/api/categorias` | Categorías del usuario autenticado | Ninguno | `200`, `401` |
+1. **`usuarios`**: Almacena usuarios registrados con `contrasena_hash` (bcrypt), `correo` único y constraints de validación.
+2. **`categorias`**: Categorías de ingresos o gastos asignadas a cada usuario con restricción única `(id_usuario, tipo, nombre)`.
+3. **`ingresos_gastos`**: Libro contable de movimientos con montos en tipo `DECIMAL(12, 2)` (precisión exacta sin error de coma flotante) y clave foránea compuesta `(id_usuario, id_categoria, tipo)` referenciando a `categorias`.
+
+### Integridad Referencial
+* **`ON DELETE RESTRICT`** uniforme: Previene la eliminación accidental de categorías o usuarios que conservan movimientos financieros.
+* Índices optimizados `idx_mov_usuario_fecha` y `idx_mov_categoria` para búsquedas y agrupaciones de alto rendimiento.
+
+---
+
+## Ejecución local
+
+* **Backend FastAPI:** Iniciar en `http://127.0.0.1:8000`
+  * Documentación interactiva Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+  * Documentación ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+* **Frontend:** Servido en `http://127.0.0.1:5500/index.html` (o mediante la extensión Live Server de VS Code).
+
+---
+
+## Autenticación
+
+El sistema implementa un esquema de autenticación robusto basado en el estándar JSON Web Token (JWT):
+
+1. **Registro:** `POST /api/usuarios` recibe nombre, correo y contraseña en texto plano, la cual es cifrada inmediatamente con `bcrypt` (12 rondas de hashing y salt aleatorio).
+2. **Login:** `POST /api/auth/login` valida las credenciales y genera un token JWT firmado (`HS256`) con caducidad establecida en `ACCESS_TOKEN_EXPIRE_MINUTES`.
+3. **Protección:** Todos los endpoints financieros requieren la cabecera `Authorization: Bearer <token>`.
+4. **Aislamiento:** La identidad del usuario se extrae del claim `sub` del token en la dependencia `get_current_user()`. Cualquier parámetro `id_usuario` enviado en el cuerpo o query string es ignorado por completo.
+5. **Mitigación de Enumeración:** Los errores de autenticación devuelven un mensaje genérico `401 Unauthorized` idéntico para correos inexistentes o contraseñas incorrectas.
+
+---
+
+## Endpoints
+
+Todos los endpoints marcados con 🔒 requieren autenticación mediante JWT.
+
+### Salud
+* `GET /` — Health check de la API (`200 OK`)
+
+### Autenticación
+* `POST /api/auth/login` — Iniciar sesión y obtener token JWT (`200 OK`, `401 Unauthorized`)
+* `GET /api/auth/me` 🔒 — Obtener datos del usuario autenticado (`200 OK`, `401 Unauthorized`)
+
+### Usuarios
+* `POST /api/usuarios` — Registro de cuenta de usuario (`201 Created`, `400 Bad Request`, `409 Conflict`)
+
+### Categorías
+* `POST /api/categorias` 🔒 — Crear una categoría (`201 Created`, `409 Conflict`)
+* `GET /api/categorias` 🔒 — Listar categorías del usuario autenticado (`200 OK`)
 
 ### Movimientos Financieros
-| Método | Endpoint | Propósito | Request Body / Query Params | Códigos |
-|---|---|---|---|---|
-| `POST` 🔒 | `/api/movimientos` | Registrar ingreso o gasto | `{"id_categoria": int, "tipo": "ingreso"\|"gasto", "monto": Decimal, "fecha": date, "descripcion": str?}` | `201`, `400`, `401`, `404`, `422` |
-| `GET` 🔒 | `/api/movimientos` | Listar los propios, con filtros | Query: `desde` (opt), `hasta` (opt), `categoria` (opt) | `200`, `400`, `401` |
-| `PUT` 🔒 | `/api/movimientos/{id}` | Actualizar un movimiento propio | Path: `id`. Body: `MovimientoUpdate` | `200`, `400`, `401`, `404`, `422` |
-| `DELETE` 🔒 | `/api/movimientos/{id}` | Eliminar un movimiento propio | Path: `id` | `200`, `400`, `401`, `404` |
-
-### Reglas de Negocio en Movimientos:
-1. **Precisión Monetaria:** El monto se valida y procesa como tipo `Decimal(12,2)` estrictamente positivo (`monto > 0`).
-2. **Pertenencia de Categoría:** La categoría debe existir y pertenecer al mismo usuario (`id_usuario`).
-3. **Coherencia de Tipo:** El `tipo` del movimiento (`ingreso`/`gasto`) debe coincidir exactamente con el `tipo` de la categoría asignada.
-4. **Validación de Rangos:** En filtros de consulta, `desde` no puede ser posterior a `hasta`.
-5. **Pertenencia del Movimiento:** `PUT` y `DELETE` rechazan (`400`) tocar un movimiento de otro usuario. El propietario se compara contra el usuario del token, que el cliente no puede falsificar.
-5. **Aislamiento por Usuario:** Las consultas y modificaciones verifican la titularidad del recurso, impidiendo accesos o ediciones no autorizadas.
-6. **Ordenamiento:** Los movimientos se listan ordenados de forma descendente (`fecha DESC, id_movimiento DESC`).
+* `POST /api/movimientos` 🔒 — Registrar un nuevo movimiento (`201 Created`, `400 Bad Request`)
+* `GET /api/movimientos` 🔒 — Listar movimientos con filtros (`desde`, `hasta`, `categoria`) (`200 OK`)
+* `PUT /api/movimientos/{id}` 🔒 — Actualizar un movimiento propio (`200 OK`, `404 Not Found`)
+* `DELETE /api/movimientos/{id}` 🔒 — Eliminar un movimiento propio (`200 OK`, `404 Not Found`)
 
 ### Resumen Financiero
-| Método | Endpoint | Propósito | Query Params | Códigos |
-|---|---|---|---|---|
-| `GET` 🔒 | `/api/resumen` | Resumen financiero de un mes | `mes` (req, `YYYY-MM`) | `200`, `400`, `401`, `422` |
+* `GET /api/resumen` 🔒 — Resumen del mes (`mes=YYYY-MM`) con total de ingresos, gastos y balance (`200 OK`)
 
-**Parámetros:**
-
-* `mes` — periodo en formato `YYYY-MM` (por ejemplo `2026-08`). Si el formato es incorrecto
-  (`2026-8`, `agosto`) o el mes no existe (`2026-13`, `2026-00`) se devuelve `400`.
-
-El usuario ya **no** se envía: sale del token.
-
-**Ejemplo:**
-
-```bash
-curl -H "Authorization: Bearer $TOKEN" \
-     "http://127.0.0.1:8000/api/resumen?mes=2026-08"
-```
-
-```json
-{
-    "id_usuario": 1,
-    "mes": "2026-08",
-    "total_ingresos": "3749.87",
-    "total_gastos": "1558.69",
-    "balance": "2191.18"
-}
-```
-
-**Qué calcula cada campo:**
-
-* **`total_ingresos`** — suma de los montos de los movimientos de tipo `ingreso` del usuario
-  cuya fecha contable cae dentro del mes solicitado.
-* **`total_gastos`** — suma de los montos de los movimientos de tipo `gasto` del mismo usuario
-  y mes.
-* **`balance`** — ahorro del periodo: `total_ingresos - total_gastos`. Lo calcula siempre el
-  backend, que es la única fuente de verdad; el cliente nunca envía importes. Un balance
-  **negativo es un resultado válido** y se devuelve con `200` cuando los gastos superan a los
-  ingresos.
-
-Los tres importes se manejan como `Decimal` con dos decimales, nunca como `float`, para evitar
-el error de redondeo binario. Un mes **sin movimientos no es un error**: la respuesta es `200`
-con los tres importes en `0.00`.
+### Módulo Analítico
+* `GET /api/analitica/prediccion` 🔒 — Predicción de gastos del próximo mes con `LinearRegression` (`200 OK`)
+* `GET /api/analitica/anomalias` 🔒 — Detección de gastos atípicos con `Z-Score > 1.5` (`200 OK`)
 
 ---
 
-### 🔬 Módulo Analítico (Fase 6)
+## Dashboard
 
-| Método | Endpoint | Propósito | Query Params | Códigos |
-|---|---|---|---|---|
-| `GET` 🔒 | `/api/analitica/prediccion` | Predicción de gastos del próximo mes | `id_usuario` (req) | `200 OK`, `404 Not Found` |
-| `GET` 🔒 | `/api/analitica/anomalias` | Detección de gastos atípicos | `id_usuario` (req) | `200 OK`, `404 Not Found` |
+El Dashboard (`dashboard.html`) proporciona una interfaz interactiva con las siguientes vistas y componentes:
 
-#### Predicción de Gastos (LinearRegression)
-
-Utiliza **Regresión Lineal** (`sklearn.linear_model.LinearRegression`) para predecir el gasto total del próximo mes a partir de la serie temporal mensual de gastos del usuario.
-
-**Flujo de procesamiento (Pandas):**
-1. Se obtienen los gastos históricos del repositorio (solo `tipo='gasto'`).
-2. Se construye un `DataFrame` y se convierte la columna `fecha` a `datetime` con `pd.to_datetime()`.
-3. Se agrupan los gastos por periodo mensual (`dt.to_period('M')` + `groupby().sum()`).
-4. Se genera una variable numérica temporal (índice ordinal 0, 1, 2, …) como feature `X`.
-5. Se entrena `LinearRegression()` con `X = índice temporal`, `y = gasto mensual`.
-6. Se predice el valor del siguiente mes cronológico.
-
-**Requisitos mínimos de datos:**
-* **≥ 2 meses** de historial de gastos → regresión lineal, confianza `"media"` (2-5) o `"alta"` (≥6).
-* **1 mes** → promedio simple, confianza `"baja"`.
-* **0 meses** → `gasto_estimado = 0.0`, confianza `"baja"`.
-
-Las predicciones negativas se truncan a `0.0` (no tiene sentido económico).
-
-**Ejemplo de respuesta:**
-
-```json
-{
-    "id_usuario": 1,
-    "mes_predicho": "2026-08",
-    "gasto_estimado": 2940000.0,
-    "confianza": "alta",
-    "razon": "Calculado con Regresión Lineal (7 meses procesados).",
-    "meses_procesados": 7
-}
-```
-
-#### Detección de Anomalías (Z-Score)
-
-Detecta gastos atípicos utilizando **Z-Score agrupado por categoría**, conforme al repositorio del instructor.
-
-**Fórmula:** `z = (monto - media_categoría) / desviación_estándar_categoría`
-
-**Umbral:** `|Z| > 1.5` (definido por el ejercicio del instructor en `analitica.py` línea 54).
-
-**Flujo de procesamiento (Pandas):**
-1. Se construye un `DataFrame` con los gastos del usuario.
-2. Se agrupan por `id_categoria` para calcular `mean` y `std` con `groupby().agg()`.
-3. Se realiza `merge()` para asociar las estadísticas a cada gasto.
-4. Se calcula el Z-Score con `np.where()` para evitar división por cero.
-5. Se filtran los gastos cuyo `|z_score|` supera el umbral.
-
-**Manejo de bordes:**
-* `std = 0` (un solo gasto o todos iguales) → `z_score = 0` → no es anomalía.
-* Sin gastos → lista vacía (no es un error).
-* Sin anomalías → `total_anomalias = 0`, lista vacía con `200 OK`.
-
-**Ejemplo de respuesta:**
-
-```json
-{
-    "id_usuario": 1,
-    "umbral_z_score": 1.5,
-    "total_gastos_analizados": 7,
-    "total_anomalias": 1,
-    "anomalias": [
-        {
-            "id_movimiento": 7,
-            "fecha": "2026-07-01",
-            "monto": 5000000.0,
-            "id_categoria": 1,
-            "promedio_categoria": 831428.57,
-            "z_score": 2.27,
-            "descripcion": "Compra extraordinaria"
-        }
-    ]
-}
-```
+* **Panel General:** KPIs con total de ingresos, total de gastos y balance neto del mes actual, junto con gráficos interactivos (distribución de gastos por categoría y tendencia histórica mensual).
+* **Movimientos:** Tabla interactiva de ingresos y gastos con paginación visual, filtros por fecha y categoría, modal para registro y edición, y confirmación de eliminación.
+* **Categorías:** Vista para crear y visualizar categorías propias clasificadas por tipo (ingreso / gasto).
+* **Análisis Predictivo:** Tarjeta con predicción de gastos futuros y badge de nivel de confianza, complementada con la tabla de anomalías detectadas.
+* **Guardián de Sesión:** Si no existe un token válido o ha expirado, redirige de forma transparente al usuario a `index.html`.
 
 ---
 
-## 🧪 Pruebas Automatizadas
+## Analytics
 
-La suite contiene **171 tests automatizados** cubriendo casos de éxito,
-validaciones de borde, errores controlados, autenticación, aislamiento por
-usuario y regresión:
+El módulo analítico (`backend/app/analytics/`) procesa exclusivamente datos de gastos (`tipo='gasto'`) del usuario autenticado:
 
-```bash
-.venv\Scripts\pytest backend/tests/ -v
-```
+### 1. Predicción de Gastos (`prediction.py`)
+* Agrupa los gastos históricos por periodo mensual (`YYYY-MM`) usando Pandas.
+* Aplica `sklearn.linear_model.LinearRegression` utilizando el índice cronológico como variable explicativa $X$ y el gasto acumulado como variable $y$.
+* Genera la proyección para el siguiente mes cronológico, asignando un nivel de confianza (`alta` para $\ge 6$ meses, `media` para 2 a 5 meses, `baja` para 1 mes o menos).
+* Garantiza que el valor estimado nunca sea negativo.
 
-Las pruebas usan repositorios en memoria (`backend/tests/conftest.py`), por lo
-que **no necesitan MySQL en ejecución** y no tocan datos reales.
-
-`backend/tests/integration/test_api_auth.py` cubre específicamente la
-autenticación: login correcto, contraseña incorrecta, usuario inexistente,
-token válido, expirado, malformado, firmado con otra clave o de un usuario
-eliminado, endpoints protegidos sin token, intentos de acceso cruzado entre
-usuarios y el flujo de cierre de sesión.
+### 2. Detección de Anomalías (`anomalies.py`)
+* Calcula la media ($\mu$) y desviación estándar ($\sigma$) del gasto agrupado por cada categoría.
+* Computa el puntaje Z: $Z = \frac{x - \mu}{\sigma}$.
+* Identifica como anomalías aquellos movimientos donde $|Z| > 1.5$ (umbral establecido).
+* Controla divisiones por cero cuando la desviación estándar es 0 (gastos idénticos o muestra única).
 
 ---
 
-## 🚢 Preparación para deployment
+## Tests
 
-> **Estado: preparado, NO desplegado.** Esta sección documenta la configuración
-> necesaria para publicar el proyecto en Render. A día de hoy **no existe ningún
-> despliegue**: la aplicación solo se ha ejecutado y verificado en local.
-
-### Qué se ha preparado
-
-| Punto | Estado |
-|---|---|
-| Puerto asignado por el entorno | `PORT` tiene prioridad sobre `APP_PORT` en `app/core/config.py` |
-| Arranque sin `--reload` | La recarga solo se activa con `APP_ENV=development`; el comando de producción no la usa |
-| Origen CORS configurable | `CORS_ORIGINS` se lee del entorno; nunca se usa `allow_origins=["*"]` |
-| Cabecera `Authorization` en CORS | Incluida en `allow_headers`; sin ella el preflight fallaría y el token nunca llegaría |
-| Credenciales fuera del código | Todas las variables sensibles salen de `.env` / variables de entorno |
-| Clave de firma JWT | `SECRET_KEY` obligatoria en producción: el arranque se **aborta** si falta |
-| URL de la API en el frontend | Declarada en un único punto (`frontend/js/config.js`) |
-
-### Backend (Render — Web Service)
-
-| Ajuste | Valor |
-|---|---|
-| Root Directory | `backend` |
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
-| Runtime | Python 3.11+ |
-
-El backend **debe** escuchar en `0.0.0.0` y en el puerto que entrega la
-plataforma mediante la variable `PORT`; nunca en un puerto fijo de desarrollo.
-
-### Variables de entorno en producción
-
-```text
-APP_ENV=production
-DEBUG=false
-DB_HOST=<host MySQL gestionado>
-DB_PORT=3306
-DB_USER=<usuario>
-DB_PASSWORD=<contraseña>
-DB_NAME=finanzas_personales
-CORS_ORIGINS=["https://<dominio-del-frontend>"]
-
-SECRET_KEY=<clave aleatoria de 64+ caracteres>
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-```
-
-`APP_HOST` y `APP_PORT` no se definen en producción: el host lo fija el comando
-de arranque y el puerto lo aporta `PORT`.
-
-**Sobre `SECRET_KEY`.** Es la clave que firma los tokens: quien la conozca
-puede emitir tokens válidos para cualquier usuario. Genérala con
+El proyecto cuenta con una cobertura integral de pruebas automatizadas:
 
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(64))"
+pytest backend/tests -v
 ```
 
-y guárdala **solo** en las variables de entorno del servicio, nunca en el
-repositorio ni en este README. Debe ser **estable** entre reinicios y réplicas:
-si cambia, todas las sesiones abiertas dejan de valer. Con `APP_ENV=production`
-la aplicación se niega a arrancar si `SECRET_KEY` falta o es demasiado corta,
-en lugar de generar una clave efímera silenciosamente.
+* **Total de Pruebas:** 171 tests
+* **Resultados:** 171 passed, 0 failed, 1 warning (deprecation menor de Starlette TestClient)
+* **Arquitectura de Tests:** Utiliza dobles de prueba y repositorios en memoria (`FakeUsuarioRepository`, `FakeCategoriaRepository`, `FakeMovimientoRepository`), permitiendo ejecutar toda la suite de forma ultra rápida sin requerir una conexión activa a MySQL.
 
-> Render no ofrece MySQL gestionado. La base de datos debe alojarse en un
-> servicio externo (Railway, Aiven, PlanetScale, Clever Cloud u otro) y el
-> esquema crearse ejecutando `database/schema.sql` contra esa instancia.
-> `database/seed.sql` es opcional y **no** debe cargarse en producción: sus
-> hashes de contraseña son cadenas ficticias.
+---
 
-### Frontend
+## Responsive
 
-El frontend es estático (HTML, CSS y JavaScript sin build) y se publicará como
-un **servicio independiente** (Render Static Site), no servido por FastAPI. Se
-mantiene así la separación de responsabilidades de la arquitectura aprobada y
-se evita añadir montajes de archivos estáticos al backend.
+El diseño web es 100% adaptable mediante CSS Grid, Flexbox y media queries fluidas en los siguientes puntos de quiebre evaluados:
 
-| Ajuste | Valor |
-|---|---|
-| Tipo | Static Site |
-| Publish Directory | `frontend` |
-| Build Command | (ninguno) |
+* **320px / 375px (Móviles pequeños y estándar):** Tablas apilables en formato tarjeta (`data-etiqueta`), menú lateral con cajón colapsable (`drawer`), botones accesibles y sin scroll horizontal accidental.
+* **768px (Tablets):** Rejilla de 2 columnas para KPIs y distribución balanceada de formularios.
+* **1024px (Laptops y Escritorio):** Barra lateral estática fijada a la izquierda, área de trabajo con margen dinámico y rejilla de gráficos en 2 columnas.
+* **1440px / 1920px (Pantallas ultra anchas):** Contenedores centrados con padding balanceado y alturas proporcionales para gráficos.
 
-Antes de publicar hay que apuntar el frontend al backend desplegado, cambiando
-**una sola línea** en `frontend/js/config.js`:
+---
 
-```js
-var URL_API_POR_DEFECTO = "https://<backend>.onrender.com";
-```
+## Moneda
 
-Como alternativa sin tocar JavaScript, se puede añadir en el `<head>` de cada
-página:
+* Todos los valores monetarios en la interfaz se visualizan estrictamente en **Pesos Colombianos (COP)** siguiendo el estándar internacional: `COP 1.500.000,00`.
+* En la capa de almacenamiento y cálculo, los valores se manejan con tipo `DECIMAL(12, 2)` (en MySQL y Python `Decimal`), evitando cualquier inconsistencia o redondeo impreciso.
+* No se utilizan abreviaturas foráneas ni símbolos ambiguos como `USD`, `US$` o `$`.
 
-```html
-<meta name="api-base-url" content="https://<backend>.onrender.com">
-```
+---
 
-El dominio resultante del frontend debe añadirse a `CORS_ORIGINS` en el
-backend, o el navegador bloqueará las peticiones.
+## Deployment
 
-### Antes de desplegar
+> **Estado:** El proyecto está técnicamente preparado y estructurado para su despliegue en la plataforma **Render**, pero se encuentra en estado **local verificado** (sin despliegue activo aún).
 
-* Verificar que `.env` **no** está versionado (`git check-ignore .env`).
-* Ejecutar `database/schema.sql` en la instancia MySQL de producción.
-* Confirmar que `CORS_ORIGINS` contiene el dominio real del frontend.
-* Considerar desactivar `/docs` y `/redoc` si la API no debe documentarse
-  públicamente (hoy están abiertos).
-* Definir `SECRET_KEY` en el servicio y comprobar que el arranque no la rechaza.
-* Servir el frontend por **HTTPS**: el token viaja en cada petición y sobre
-  HTTP plano sería interceptable.
-* Revisar `ACCESS_TOKEN_EXPIRE_MINUTES`: 60 minutos es razonable para uso
-  interactivo; acortarlo reduce la ventana de un token robado.
+### Parámetros Técnicos para Render:
+
+#### 1. Backend (Render Web Service)
+* **Root Directory:** `backend`
+* **Build Command:** `pip install -r requirements.txt`
+* **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+* **Variables de Entorno Requeridas:**
+  * `APP_ENV=production`
+  * `DEBUG=false`
+  * `SECRET_KEY=<clave_aleatoria_64_caracteres>`
+  * `CORS_ORIGINS=["https://<tu-frontend>.onrender.com"]`
+  * `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (Apuntando a una base de datos MySQL gestionada externa como Railway, Aiven o Clever Cloud).
+
+#### 2. Frontend (Render Static Site)
+* **Publish Directory:** `frontend`
+* **Build Command:** *(dejar en blanco, HTML/CSS/JS puro)*
+* **Configuración:** Ajustar `URL_API_POR_DEFECTO` en `frontend/js/config.js` con la URL del Web Service de Render.

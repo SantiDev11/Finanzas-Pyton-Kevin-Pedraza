@@ -196,3 +196,75 @@ def test_resumen_valida_mes_antes_de_consultar_usuario(resumen_service: ResumenS
     """El periodo se valida antes de tocar la base de datos, incluso con usuario inexistente."""
     with pytest.raises(ValidationException):
         resumen_service.obtener_resumen_mensual(id_usuario=999, mes="2026-13")
+
+
+# =============================================================================
+# PRUEBAS DE MÉTRICAS ANALÍTICAS (PORCENTAJE DE AHORRO Y CATEGORÍAS COSTOSAS)
+# =============================================================================
+
+def test_resumen_porcentaje_ahorro_positivo(resumen_service: ResumenService, fake_movimiento_repo):
+    """Ahorro positivo: (3000000 - 1500000) / 3000000 * 100 = 50.0%."""
+    _sembrar(fake_movimiento_repo, "ingreso", "3000000.00", date(2026, 8, 1))
+    _sembrar(fake_movimiento_repo, "gasto", "1500000.00", date(2026, 8, 10))
+
+    res = resumen_service.obtener_resumen_mensual(id_usuario=1, mes="2026-08")
+    assert res.porcentaje_ahorro == 50.0
+
+
+def test_resumen_porcentaje_ahorro_negativo(resumen_service: ResumenService, fake_movimiento_repo):
+    """Ahorro negativo: (1000000 - 1500000) / 1000000 * 100 = -50.0%."""
+    _sembrar(fake_movimiento_repo, "ingreso", "1000000.00", date(2026, 8, 1))
+    _sembrar(fake_movimiento_repo, "gasto", "1500000.00", date(2026, 8, 10))
+
+    res = resumen_service.obtener_resumen_mensual(id_usuario=1, mes="2026-08")
+    assert res.porcentaje_ahorro == -50.0
+
+
+def test_resumen_porcentaje_ahorro_ingresos_cero(resumen_service: ResumenService, fake_movimiento_repo):
+    """Sin ingresos: porcentaje_ahorro se define en 0.0 para evitar división por cero."""
+    _sembrar(fake_movimiento_repo, "gasto", "500000.00", date(2026, 8, 10))
+
+    res = resumen_service.obtener_resumen_mensual(id_usuario=1, mes="2026-08")
+    assert res.total_ingresos == Decimal("0.00")
+    assert res.porcentaje_ahorro == 0.0
+
+
+def test_resumen_categoria_mas_costosa_mes(
+    resumen_service: ResumenService, fake_movimiento_repo, fake_categoria_repo
+):
+    """Identifica la categoría con mayor gasto acumulado en el mes."""
+    cat_comida = fake_categoria_repo.create(nombre="Comida", tipo="gasto", id_usuario=1)
+    cat_transporte = fake_categoria_repo.create(nombre="Transporte", tipo="gasto", id_usuario=1)
+
+    fake_movimiento_repo.create(1, cat_comida["id_categoria"], "gasto", Decimal("300000.00"), date(2026, 8, 5), None)
+    fake_movimiento_repo.create(1, cat_comida["id_categoria"], "gasto", Decimal("250000.00"), date(2026, 8, 12), None)
+    fake_movimiento_repo.create(1, cat_transporte["id_categoria"], "gasto", Decimal("400000.00"), date(2026, 8, 15), None)
+
+    res = resumen_service.obtener_resumen_mensual(id_usuario=1, mes="2026-08")
+    # Comida suma 550000 vs Transporte 400000
+    assert res.categoria_mas_costosa_mes == "Comida"
+
+
+def test_resumen_categoria_mas_costosa_mes_sin_gastos(resumen_service: ResumenService, fake_movimiento_repo):
+    """Si el mes no tiene gastos, categoria_mas_costosa_mes devuelve None."""
+    _sembrar(fake_movimiento_repo, "ingreso", "2000000.00", date(2026, 8, 1))
+
+    res = resumen_service.obtener_resumen_mensual(id_usuario=1, mes="2026-08")
+    assert res.categoria_mas_costosa_mes is None
+
+
+def test_resumen_categoria_mas_costosa_historico(
+    resumen_service: ResumenService, fake_movimiento_repo, fake_categoria_repo
+):
+    """Identifica la categoría con mayor gasto en todo el histórico."""
+    cat_vivienda = fake_categoria_repo.create(nombre="Vivienda", tipo="gasto", id_usuario=1)
+    cat_salud = fake_categoria_repo.create(nombre="Salud", tipo="gasto", id_usuario=1)
+
+    # Gastos en meses distintos
+    fake_movimiento_repo.create(1, cat_vivienda["id_categoria"], "gasto", Decimal("1500000.00"), date(2026, 7, 1), None)
+    fake_movimiento_repo.create(1, cat_vivienda["id_categoria"], "gasto", Decimal("1500000.00"), date(2026, 8, 1), None)
+    fake_movimiento_repo.create(1, cat_salud["id_categoria"], "gasto", Decimal("800000.00"), date(2026, 8, 15), None)
+
+    res = resumen_service.obtener_resumen_mensual(id_usuario=1, mes="2026-08")
+    assert res.categoria_mas_costosa_historico == "Vivienda"
+

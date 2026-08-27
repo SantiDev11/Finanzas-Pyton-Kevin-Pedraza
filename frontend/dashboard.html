@@ -211,7 +211,7 @@
                             </header>
                             <p class="kpi-tarjeta__valor" id="valor-balance">—</p>
                             <footer class="kpi-tarjeta__pie">
-                                <span class="kpi-tarjeta__nota">Ahorro neto calculado</span>
+                                <span class="kpi-tarjeta__nota" id="nota-balance">Ahorro neto calculado</span>
                             </footer>
                         </article>
 
@@ -451,6 +451,7 @@
                                             <th scope="col" class="celda--numerica">ID</th>
                                             <th scope="col">Nombre</th>
                                             <th scope="col">Tipo</th>
+                                            <th scope="col" class="celda--acciones">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody id="cuerpo-categorias"></tbody>
@@ -616,14 +617,54 @@
     </dialog>
 
     <!-- ====================================================================
+         DIÁLOGO MODAL: EDITAR CATEGORÍA
+         ==================================================================== -->
+    <dialog class="dialogo dialogo--estrecho" id="dialogo-categoria" aria-labelledby="titulo-dialogo-categoria">
+        <form class="formulario" id="form-editar-categoria" novalidate>
+            <header class="dialogo__cabecera">
+                <h2 id="titulo-dialogo-categoria">Editar categoría</h2>
+                <button type="button" class="boton boton--icono" id="boton-cerrar-dialogo-categoria" aria-label="Cerrar ventana modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </header>
+
+            <fieldset>
+                <legend class="visualmente-oculto">Datos de la categoría</legend>
+                <div class="formulario__campos">
+                    <div class="campo campo--ancho-completo">
+                        <label for="editar-categoria-nombre">Nombre de la categoría</label>
+                        <input type="text" id="editar-categoria-nombre" name="nombre" minlength="2" maxlength="60" required
+                            placeholder="Ej: Alimentación, Salario, Transporte">
+                    </div>
+
+                    <div class="campo campo--ancho-completo">
+                        <label for="editar-categoria-tipo">Tipo de categoría</label>
+                        <select id="editar-categoria-tipo" name="tipo" required>
+                            <option value="gasto">Gasto (Egreso)</option>
+                            <option value="ingreso">Ingreso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="mensaje-error" id="error-editar-categoria" role="alert" hidden></p>
+
+                <div class="formulario__acciones formulario__acciones--dialogo">
+                    <button type="button" class="boton boton--secundario" id="boton-cancelar-categoria">Cancelar</button>
+                    <button type="submit" class="boton boton--primario" id="boton-guardar-categoria">Guardar cambios</button>
+                </div>
+            </fieldset>
+        </form>
+    </dialog>
+
+    <!-- ====================================================================
          DIÁLOGO MODAL: CONFIRMAR ELIMINACIÓN
          ==================================================================== -->
     <dialog class="dialogo dialogo--estrecho" id="dialogo-confirmar" aria-labelledby="titulo-dialogo-confirmar">
         <div class="dialogo__contenido">
             <header class="dialogo__cabecera">
-                <h2 id="titulo-dialogo-confirmar">Eliminar movimiento</h2>
+                <h2 id="titulo-dialogo-confirmar">Eliminar elemento</h2>
             </header>
-            <p id="texto-confirmar">¿Deseas eliminar este movimiento permanentemente?</p>
+            <p id="texto-confirmar">¿Deseas eliminar este elemento permanentemente?</p>
             <div class="formulario__acciones formulario__acciones--dialogo">
                 <button type="button" class="boton boton--secundario" id="boton-cancelar-eliminar">Cancelar</button>
                 <button type="button" class="boton boton--peligro" id="boton-confirmar-eliminar">Eliminar definitivamente</button>

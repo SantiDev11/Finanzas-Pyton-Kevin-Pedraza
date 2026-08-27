@@ -70,3 +70,53 @@ class CategoriaRepository:
         with get_db_cursor(self._connection) as cursor:
             cursor.execute(sql, (id_usuario, tipo, nombre))
             return cursor.fetchone() is not None
+
+    def exists_by_user_type_name_excluding_id(
+        self, id_usuario: int, tipo: str, nombre: str, exclude_id: int
+    ) -> bool:
+        """
+        Comprueba si ya existe otra categoría con el mismo nombre y tipo para el usuario,
+        excluyendo la categoría con el ID indicado (útil para validación en edición).
+        """
+        sql = """
+            SELECT 1 FROM categorias
+            WHERE id_usuario = %s AND tipo = %s AND nombre = %s AND id_categoria != %s
+            LIMIT 1
+        """
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_usuario, tipo, nombre, exclude_id))
+            return cursor.fetchone() is not None
+
+    def update(self, id_categoria: int, nombre: str, tipo: str) -> Dict[str, Any]:
+        """
+        Actualiza los datos de una categoría existente.
+        """
+        sql_update = """
+            UPDATE categorias
+            SET nombre = %s, tipo = %s
+            WHERE id_categoria = %s
+        """
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql_update, (nombre, tipo, id_categoria))
+            sql_select = "SELECT id_categoria, nombre, tipo, id_usuario FROM categorias WHERE id_categoria = %s"
+            cursor.execute(sql_select, (id_categoria,))
+            return cursor.fetchone()
+
+    def delete(self, id_categoria: int) -> bool:
+        """
+        Elimina una categoría por su identificador primario.
+        """
+        sql = "DELETE FROM categorias WHERE id_categoria = %s"
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_categoria,))
+            return cursor.rowcount > 0
+
+    def has_movimientos(self, id_categoria: int) -> bool:
+        """
+        Verifica si existen movimientos asociados a la categoría.
+        """
+        sql = "SELECT 1 FROM ingresos_gastos WHERE id_categoria = %s LIMIT 1"
+        with get_db_cursor(self._connection) as cursor:
+            cursor.execute(sql, (id_categoria,))
+            return cursor.fetchone() is not None
+

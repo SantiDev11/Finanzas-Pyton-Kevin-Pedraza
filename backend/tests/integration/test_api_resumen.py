@@ -193,3 +193,38 @@ def test_api_resumen_normaliza_el_mes_devuelto(client: TestClient):
     """El mes se devuelve normalizado a YYYY-MM."""
     data = client.get("/api/resumen", params={"mes": " 2026-08 "}).json()
     assert data["mes"] == "2026-08"
+
+
+def test_api_resumen_metricas_completas(client: TestClient):
+    """Verifica que el endpoint /api/resumen devuelva las métricas analíticas."""
+    # Crear dos categorías
+    cat1 = client.post("/api/categorias", json={"nombre": "Renta", "tipo": "gasto"}).json()
+    cat2 = client.post("/api/categorias", json={"nombre": "Super", "tipo": "gasto"}).json()
+
+    # Movimientos en el mes
+    client.post("/api/movimientos", json={
+        "id_categoria": 1, "tipo": "ingreso", "monto": "4000000.00", "fecha": "2026-08-01"
+    })
+    client.post("/api/movimientos", json={
+        "id_categoria": cat1["id_categoria"], "tipo": "gasto", "monto": "1500000.00", "fecha": "2026-08-05"
+    })
+    client.post("/api/movimientos", json={
+        "id_categoria": cat2["id_categoria"], "tipo": "gasto", "monto": "500000.00", "fecha": "2026-08-10"
+    })
+
+    # Histórico en otro mes para comprobar categoría histórica
+    client.post("/api/movimientos", json={
+        "id_categoria": cat1["id_categoria"], "tipo": "gasto", "monto": "2000000.00", "fecha": "2026-07-05"
+    })
+
+    res = client.get("/api/resumen", params={"mes": "2026-08"})
+    assert res.status_code == 200
+    data = res.json()
+
+    # Ahorro: (4000000 - 2000000) / 4000000 * 100 = 50.0%
+    assert data["porcentaje_ahorro"] == 50.0
+    # En agosto: Renta (1.5M) > Super (0.5M)
+    assert data["categoria_mas_costosa_mes"] == "Renta"
+    # En histórico: Renta (3.5M) > Super (0.5M)
+    assert data["categoria_mas_costosa_historico"] == "Renta"
+
