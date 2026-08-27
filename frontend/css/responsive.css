@@ -32,28 +32,6 @@
         padding: var(--espacio-5) var(--espacio-4);
     }
 
-    /* Sidebar Drawer en Móvil */
-    .barra-lateral {
-        transform: translateX(-100%);
-        box-shadow: var(--sombra-xl);
-    }
-
-    .barra-lateral.abierta {
-        transform: translateX(0);
-    }
-
-    .boton-cerrar-sidebar {
-        display: flex;
-    }
-
-    .area-trabajo {
-        margin-left: 0;
-    }
-
-    .boton-menu-movil {
-        display: flex;
-    }
-
     /* Tablas apilables en tarjetas para evitar scroll accidental */
     .tabla--apilable thead {
         position: absolute;
@@ -109,6 +87,38 @@
 
     .badge-moneda {
         display: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   1b. SIDEBAR COMO CAJÓN (< 1024px / 63.99em)
+
+   La barra lateral es `position: fixed` y solo deja hueco al contenido a
+   partir de 64em, donde `.area-trabajo` recibe su margen izquierdo. Por eso
+   el comportamiento de cajón debe cubrir TODO el rango inferior a 64em y no
+   únicamente el móvil: entre 768px y 1023px la barra quedaba visible y fija
+   sobre un contenido sin margen, tapándolo, y sin botón para cerrarla.
+   -------------------------------------------------------------------------- */
+@media (max-width: 63.99em) {
+    .barra-lateral {
+        transform: translateX(-100%);
+        box-shadow: var(--sombra-xl);
+    }
+
+    .barra-lateral.abierta {
+        transform: translateX(0);
+    }
+
+    .boton-cerrar-sidebar {
+        display: flex;
+    }
+
+    .area-trabajo {
+        margin-left: 0;
+    }
+
+    .boton-menu-movil {
+        display: flex;
     }
 }
 

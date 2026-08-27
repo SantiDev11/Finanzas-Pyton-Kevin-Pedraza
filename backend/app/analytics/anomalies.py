@@ -64,8 +64,11 @@ def detectar_anomalias(
 
     # ── Paso 3: Estadísticas agrupadas por categoría ─────────────────────
     # groupby + agg calcula media y desviación estándar por categoría.
-    # std con ddof=0 (desviación poblacional) para ser coherente con el
-    # cálculo Z-Score manual: no se resta 1 grado de libertad.
+    # `std` usa el valor por defecto de pandas, ddof=1 (desviación muestral):
+    # los gastos registrados son una muestra del comportamiento del usuario,
+    # no la población completa. Es la convención que verifican los tests de
+    # backend/tests/unit/test_anomalies.py; cambiarla desplazaría el Z-Score
+    # de todos los movimientos y con él el conjunto de anomalías detectadas.
     stats = (
         df.groupby("id_categoria")["monto"]
         .agg(["mean", "std"])

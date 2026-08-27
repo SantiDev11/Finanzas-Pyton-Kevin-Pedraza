@@ -157,9 +157,12 @@
                     cuerpo: datos
                 });
             },
-            /** DELETE /api/movimientos/{id} */
-            eliminar: function (idMovimiento) {
-                return solicitar(CONFIG.RUTAS.MOVIMIENTOS + "/" + idMovimiento, { metodo: "DELETE" });
+            /** DELETE /api/movimientos/{id}?id_usuario= */
+            eliminar: function (idMovimiento, idUsuario) {
+                return solicitar(CONFIG.RUTAS.MOVIMIENTOS + "/" + idMovimiento, {
+                    metodo: "DELETE",
+                    parametros: { id_usuario: idUsuario }
+                });
             }
         },
 

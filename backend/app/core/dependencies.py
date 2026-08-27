@@ -1,7 +1,3 @@
-from typing import Generator
-import pymysql
-
-from app.database.connection import create_connection
 from app.repositories.usuario_repository import UsuarioRepository
 from app.repositories.categoria_repository import CategoriaRepository
 from app.repositories.movimiento_repository import MovimientoRepository
@@ -10,15 +6,6 @@ from app.services.categoria_service import CategoriaService
 from app.services.movimiento_service import MovimientoService
 from app.services.resumen_service import ResumenService
 from app.services.analitica_service import AnaliticaService
-
-
-def get_db_connection() -> Generator[pymysql.Connection, None, None]:
-    """Inyector de conexión a MySQL."""
-    conn = create_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
 
 
 def get_usuario_service() -> UsuarioService:

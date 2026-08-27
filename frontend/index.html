@@ -137,7 +137,10 @@
                                 <div class="campo campo--ancho-completo">
                                     <label for="ingreso-contrasena">Contraseña</label>
                                     <input type="password" id="ingreso-contrasena" name="contrasena" required autocomplete="current-password"
-                                        placeholder="••••••••">
+                                        placeholder="••••••••" aria-describedby="ayuda-contrasena-ingreso">
+                                    <p class="campo__ayuda" id="ayuda-contrasena-ingreso">
+                                        Pendiente de verificación: el backend aún no expone un endpoint de inicio de sesión (véase la nota inferior).
+                                    </p>
                                 </div>
                             </div>
 
@@ -151,10 +154,13 @@
                         </fieldset>
                     </form>
 
-                    <aside class="nota nota--info" aria-label="Información de acceso">
-                        <h4>Gestión de sesión</h4>
+                    <aside class="nota nota--aviso" aria-label="Limitación conocida del acceso">
+                        <h4>Alcance actual del acceso</h4>
                         <p>
-                            El acceso valida la existencia del usuario contra MySQL y aísla la sesión en el navegador. Si no tienes una cuenta, puedes crearla en la pestaña superior.
+                            La API todavía no expone un endpoint de verificación de credenciales: el único endpoint de usuarios es <code>POST /api/usuarios</code> (registro). El acceso comprueba contra MySQL que el usuario exista y guarda la sesión en esta pestaña, pero <strong>la contraseña no se verifica en el backend</strong>. No hay JWT ni tokens de sesión.
+                        </p>
+                        <p>
+                            Las contraseñas sí se cifran con bcrypt al registrarse y nunca se almacenan en el navegador. La verificación real queda pendiente de un endpoint de inicio de sesión en el backend.
                         </p>
                     </aside>
                 </section>

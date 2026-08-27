@@ -181,13 +181,26 @@ class MovimientoService:
             fecha_creacion=actualizado.get("fecha_creacion"),
         )
 
-    def eliminar_movimiento(self, id_movimiento: int) -> MensajeResponse:
+    def eliminar_movimiento(
+        self, id_movimiento: int, id_usuario: Optional[int] = None
+    ) -> MensajeResponse:
         """
-        Elimina un movimiento tras validar su existencia.
+        Elimina un movimiento tras validar su existencia y su pertenencia.
+
+        `id_usuario` es opcional para no romper el contrato ya aprobado del
+        endpoint, pero cuando se envía se comprueba igual que en
+        actualizar_movimiento: un usuario no puede borrar un movimiento ajeno.
+        El frontend lo envía siempre.
         """
         movimiento = self._movimiento_repo.get_by_id(id_movimiento)
         if not movimiento:
             raise EntityNotFoundException(f"El movimiento con ID {id_movimiento} no existe.")
+
+        # Validar pertenencia del movimiento al usuario que solicita el borrado.
+        if id_usuario is not None and movimiento["id_usuario"] != id_usuario:
+            raise ValidationException(
+                "No tiene permisos para eliminar un movimiento que pertenece a otro usuario."
+            )
 
         self._movimiento_repo.delete(id_movimiento)
         return MensajeResponse(mensaje="Movimiento eliminado con éxito")

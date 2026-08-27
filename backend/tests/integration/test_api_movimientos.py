@@ -383,3 +383,39 @@ def test_api_eliminar_movimiento_inexistente(client: TestClient):
     response = client.delete("/api/movimientos/88888")
     assert response.status_code == 404
     assert "no existe" in response.json()["detail"]
+
+
+def test_api_eliminar_movimiento_propio_con_id_usuario(client: TestClient):
+    """23. Eliminar movimiento propio indicando id_usuario (Status 200)."""
+    r_crear = client.post("/api/movimientos", json={
+        "id_usuario": 1, "id_categoria": 1, "tipo": "ingreso", "monto": "1200.00", "fecha": "2026-06-02"
+    })
+    mov_id = r_crear.json()["id_movimiento"]
+
+    response = client.delete(f"/api/movimientos/{mov_id}", params={"id_usuario": 1})
+    assert response.status_code == 200
+    assert "eliminado con éxito" in response.json()["mensaje"]
+
+
+def test_api_eliminar_movimiento_de_otro_usuario_rechazado(client: TestClient):
+    """24. Un usuario no puede eliminar el movimiento de otro (Status 400)."""
+    # Movimiento perteneciente al usuario 1
+    r_crear = client.post("/api/movimientos", json={
+        "id_usuario": 1, "id_categoria": 2, "tipo": "gasto", "monto": "450.00", "fecha": "2026-06-03"
+    })
+    mov_id = r_crear.json()["id_movimiento"]
+
+    # Segundo usuario que intenta borrarlo
+    r_usuario = client.post("/api/usuarios", json={
+        "nombre": "Intruso", "correo": "intruso@example.com", "contrasena": "Password123*"
+    })
+    id_intruso = r_usuario.json()["id_usuario"]
+    assert id_intruso != 1
+
+    response = client.delete(f"/api/movimientos/{mov_id}", params={"id_usuario": id_intruso})
+    assert response.status_code == 400
+    assert "no tiene permisos" in response.json()["detail"].lower()
+
+    # El movimiento del usuario 1 sigue existiendo
+    r_lista = client.get("/api/movimientos", params={"id_usuario": 1})
+    assert any(m["id_movimiento"] == mov_id for m in r_lista.json())

@@ -1,6 +1,6 @@
 import logging
 from contextlib import contextmanager
-from typing import Generator, Any, Optional
+from typing import Generator, Optional
 import pymysql
 import pymysql.cursors
 
@@ -50,20 +50,12 @@ def get_db_cursor(connection: Optional[pymysql.Connection] = None) -> Generator[
         if isinstance(exc, DatabaseException):
             raise exc
         if isinstance(exc, pymysql.MySQLError):
-            raise DatabaseException(f"Error de base de datos: {exc.args[1] if len(exc.args) > 1 else str(exc)}") from exc
+            # El detalle del motor (nombres de tabla, fragmentos de SQL, códigos
+            # de error) queda solo en el log del servidor. El mensaje que viaja
+            # al cliente es genérico para no filtrar la estructura interna.
+            raise DatabaseException("Error interno de base de datos.") from exc
         raise exc
     finally:
         cursor.close()
         if owns_connection:
             conn.close()
-
-
-def get_db() -> Generator[pymysql.Connection, None, None]:
-    """
-    Generador para inyección de dependencias de FastAPI (yield connection).
-    """
-    conn = create_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()

@@ -152,6 +152,10 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 * **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 * **Documentación Alternativa ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
+> `--reload` es exclusivo del desarrollo local. El comando de producción no lo
+> usa y escucha en el puerto que asigna el entorno: véase
+> [Preparación para deployment](#-preparación-para-deployment).
+
 ---
 
 ## 🖥️ Guía de Inicio Rápido (Frontend)
@@ -238,12 +242,19 @@ nunca el correo ni la contraseña. Al cerrar la pestaña, la sesión termina y
 vuelve a exigirse el acceso; al recargarla, el identificador se revalida contra
 el backend antes de restaurar la sesión.
 
-> **Limitación conocida.** La API actual expone únicamente `POST /api/usuarios`;
-> **no existe ningún endpoint de inicio de sesión**, por lo que el frontend no
-> puede verificar correo y contraseña. La pantalla de acceso lo indica de forma
-> explícita y no solicita una contraseña que nadie podría comprobar. No se ha
-> implementado JWT, OAuth ni ningún esquema de tokens, ni se ha modificado el
-> backend. El endpoint que haría falta se describe al final de esta sección.
+> **Limitación conocida (verificada en la Fase 8).** La API actual expone
+> únicamente `POST /api/usuarios`; **no existe ningún endpoint de inicio de
+> sesión**, por lo que el frontend no puede verificar correo y contraseña.
+>
+> El formulario de acceso sí incluye un campo de contraseña —es donde encajará
+> el login real cuando exista—, pero **ese valor no se envía a ninguna parte y
+> no se comprueba**. Lo único que se valida contra MySQL es que el usuario
+> exista. Tanto la pantalla de acceso como el propio campo lo advierten de
+> forma explícita para no aparentar una autenticación que no se realiza.
+>
+> No se ha implementado JWT, OAuth ni ningún esquema de tokens, ni se ha
+> modificado el backend. El endpoint que haría falta se describe a
+> continuación.
 
 **Endpoint necesario para un login completo (pendiente de aprobación):**
 
@@ -291,13 +302,14 @@ pesos enteros mostraría una cifra distinta de la almacenada.
 | `POST` | `/api/movimientos` | Registrar ingreso o gasto | `{"id_usuario": int, "id_categoria": int, "tipo": "ingreso"\|"gasto", "monto": Decimal, "fecha": date, "descripcion": str?}` | `201 Created`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable` |
 | `GET` | `/api/movimientos` | Listar con filtros | Query: `id_usuario` (req), `desde` (opt), `hasta` (opt), `categoria` (opt) | `200 OK`, `400 Bad Request`, `404 Not Found` |
 | `PUT` | `/api/movimientos/{id}` | Actualizar movimiento existente | Path: `id`. Body: `MovimientoUpdate` | `200 OK`, `400 Bad Request`, `404 Not Found`, `422` |
-| `DELETE` | `/api/movimientos/{id}` | Eliminar movimiento por ID | Path: `id` | `200 OK`, `404 Not Found` |
+| `DELETE` | `/api/movimientos/{id}` | Eliminar movimiento por ID | Path: `id`. Query: `id_usuario` (opt, valida la pertenencia) | `200 OK`, `400 Bad Request`, `404 Not Found` |
 
 ### Reglas de Negocio en Movimientos:
 1. **Precisión Monetaria:** El monto se valida y procesa como tipo `Decimal(12,2)` estrictamente positivo (`monto > 0`).
 2. **Pertenencia de Categoría:** La categoría debe existir y pertenecer al mismo usuario (`id_usuario`).
 3. **Coherencia de Tipo:** El `tipo` del movimiento (`ingreso`/`gasto`) debe coincidir exactamente con el `tipo` de la categoría asignada.
 4. **Validación de Rangos:** En filtros de consulta, `desde` no puede ser posterior a `hasta`.
+5. **Pertenencia del Movimiento:** `PUT` rechaza (`400`) modificar un movimiento de otro usuario. `DELETE` aplica la misma comprobación cuando recibe `id_usuario`, que es lo que envía siempre el frontend.
 5. **Aislamiento por Usuario:** Las consultas y modificaciones verifican la titularidad del recurso, impidiendo accesos o ediciones no autorizadas.
 6. **Ordenamiento:** Los movimientos se listan ordenados de forma descendente (`fecha DESC, id_movimiento DESC`).
 
@@ -430,8 +442,105 @@ Detecta gastos atípicos utilizando **Z-Score agrupado por categoría**, conform
 
 ## 🧪 Pruebas Automatizadas
 
-La suite de pruebas contiene **136 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados y regresión:
+La suite de pruebas contiene **138 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados, aislamiento por usuario y regresión:
 
 ```bash
 .venv\Scripts\pytest backend/tests/ -v
 ```
+
+Las pruebas usan repositorios en memoria (`backend/tests/conftest.py`), por lo
+que **no necesitan MySQL en ejecución** y no tocan datos reales.
+
+---
+
+## 🚢 Preparación para deployment
+
+> **Estado: preparado, NO desplegado.** Esta sección documenta la configuración
+> necesaria para publicar el proyecto en Render. A día de hoy **no existe ningún
+> despliegue**: la aplicación solo se ha ejecutado y verificado en local.
+
+### Qué se ha preparado
+
+| Punto | Estado |
+|---|---|
+| Puerto asignado por el entorno | `PORT` tiene prioridad sobre `APP_PORT` en `app/core/config.py` |
+| Arranque sin `--reload` | La recarga solo se activa con `APP_ENV=development`; el comando de producción no la usa |
+| Origen CORS configurable | `CORS_ORIGINS` se lee del entorno; nunca se usa `allow_origins=["*"]` |
+| Credenciales fuera del código | Todas las variables sensibles salen de `.env` / variables de entorno |
+| URL de la API en el frontend | Declarada en un único punto (`frontend/js/config.js`) |
+
+### Backend (Render — Web Service)
+
+| Ajuste | Valor |
+|---|---|
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| Runtime | Python 3.11+ |
+
+El backend **debe** escuchar en `0.0.0.0` y en el puerto que entrega la
+plataforma mediante la variable `PORT`; nunca en un puerto fijo de desarrollo.
+
+### Variables de entorno en producción
+
+```text
+APP_ENV=production
+DEBUG=false
+DB_HOST=<host MySQL gestionado>
+DB_PORT=3306
+DB_USER=<usuario>
+DB_PASSWORD=<contraseña>
+DB_NAME=finanzas_personales
+CORS_ORIGINS=["https://<dominio-del-frontend>"]
+```
+
+`APP_HOST` y `APP_PORT` no se definen en producción: el host lo fija el comando
+de arranque y el puerto lo aporta `PORT`.
+
+> Render no ofrece MySQL gestionado. La base de datos debe alojarse en un
+> servicio externo (Railway, Aiven, PlanetScale, Clever Cloud u otro) y el
+> esquema crearse ejecutando `database/schema.sql` contra esa instancia.
+> `database/seed.sql` es opcional y **no** debe cargarse en producción: sus
+> hashes de contraseña son cadenas ficticias.
+
+### Frontend
+
+El frontend es estático (HTML, CSS y JavaScript sin build) y se publicará como
+un **servicio independiente** (Render Static Site), no servido por FastAPI. Se
+mantiene así la separación de responsabilidades de la arquitectura aprobada y
+se evita añadir montajes de archivos estáticos al backend.
+
+| Ajuste | Valor |
+|---|---|
+| Tipo | Static Site |
+| Publish Directory | `frontend` |
+| Build Command | (ninguno) |
+
+Antes de publicar hay que apuntar el frontend al backend desplegado, cambiando
+**una sola línea** en `frontend/js/config.js`:
+
+```js
+var URL_API_POR_DEFECTO = "https://<backend>.onrender.com";
+```
+
+Como alternativa sin tocar JavaScript, se puede añadir en el `<head>` de cada
+página:
+
+```html
+<meta name="api-base-url" content="https://<backend>.onrender.com">
+```
+
+El dominio resultante del frontend debe añadirse a `CORS_ORIGINS` en el
+backend, o el navegador bloqueará las peticiones.
+
+### Antes de desplegar
+
+* Verificar que `.env` **no** está versionado (`git check-ignore .env`).
+* Ejecutar `database/schema.sql` en la instancia MySQL de producción.
+* Confirmar que `CORS_ORIGINS` contiene el dominio real del frontend.
+* Considerar desactivar `/docs` y `/redoc` si la API no debe documentarse
+  públicamente (hoy están abiertos).
+* Tener presente la limitación de autenticación descrita más arriba: **cualquier
+  cliente que conozca un `id_usuario` puede consultar sus datos**. Publicar la
+  API en Internet sin un endpoint de login expone los datos de todos los
+  usuarios.

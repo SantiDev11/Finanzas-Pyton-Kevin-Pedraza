@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.core.exceptions import DuplicateEntityException, ValidationException
+from app.core.exceptions import DuplicateEntityException
 from app.core.security import hash_password
 from app.repositories.usuario_repository import UsuarioRepository
 from app.schemas.usuario import UsuarioCreate, UsuarioResponse

@@ -5,13 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
-from app.core.exceptions import (
-    AppException,
-    EntityNotFoundException,
-    DuplicateEntityException,
-    ValidationException,
-    DatabaseException,
-)
+from app.core.exceptions import AppException
 from app.routes.usuarios_routes import router as usuarios_router
 from app.routes.categorias_routes import router as categorias_router
 from app.routes.movimientos_routes import router as movimientos_router
@@ -34,12 +28,17 @@ app = FastAPI(
 )
 
 # Configuración de CORS
+#
+# Nunca se usa allow_origins=["*"]: la lista sale de CORS_ORIGINS y, si la
+# variable llegara vacía, se cae a los orígenes locales de desarrollo en lugar
+# de abrir la API a cualquier origen. Un comodín junto a allow_credentials=True
+# es además una combinación que los navegadores rechazan.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Accept", "Content-Type"],
 )
 
 
@@ -102,10 +101,18 @@ def health_check():
 
 
 if __name__ == "__main__":
+    # Arranque de conveniencia para desarrollo local.
+    #
+    # En producción NO se usa este bloque ni la recarga automática: el proceso
+    # lo lanza el servidor con
+    #   uvicorn main:app --host 0.0.0.0 --port $PORT
+    # (véase la sección "Preparación para deployment" del README).
     import uvicorn
+
+    es_desarrollo = settings.APP_ENV.lower() == "development"
     uvicorn.run(
         "main:app",
         host=settings.APP_HOST,
         port=settings.APP_PORT,
-        reload=settings.DEBUG
+        reload=es_desarrollo and settings.DEBUG
     )

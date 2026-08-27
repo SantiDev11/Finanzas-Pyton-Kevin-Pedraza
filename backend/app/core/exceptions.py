@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 class AppException(Exception):
     """Excepción base para errores de la aplicación."""
     def __init__(self, message: str, status_code: int = 400):

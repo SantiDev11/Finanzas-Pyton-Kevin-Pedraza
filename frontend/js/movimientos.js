@@ -5,7 +5,7 @@
  *   GET    /api/movimientos?id_usuario=&desde=&hasta=&categoria=
  *   POST   /api/movimientos
  *   PUT    /api/movimientos/{id}
- *   DELETE /api/movimientos/{id}
+ *   DELETE /api/movimientos/{id}?id_usuario=
  *
  * Las validaciones que se hacen aquí son exclusivamente de experiencia de uso:
  * el backend vuelve a validar cada campo y sigue siendo la autoridad.
@@ -325,7 +325,7 @@
         }
         nodos.botonConfirmarEliminar.disabled = true;
         try {
-            await Api.movimientos.eliminar(idPorEliminar);
+            await Api.movimientos.eliminar(idPorEliminar, App.usuarioActivo());
             UI.cerrarDialogo(nodos.dialogoConfirmar);
             UI.notificar("Movimiento eliminado correctamente.", "exito");
             await App.refrescarDatosDependientes();

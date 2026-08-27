@@ -16,7 +16,10 @@ class Settings:
     """
     APP_ENV: str = os.getenv("APP_ENV", "development")
     APP_HOST: str = os.getenv("APP_HOST", "127.0.0.1")
-    APP_PORT: int = int(os.getenv("APP_PORT", "8000"))
+    # PORT tiene prioridad sobre APP_PORT: las plataformas de despliegue
+    # (Render entre ellas) asignan el puerto por esa variable y la aplicación
+    # debe escuchar en el que reciba, no en uno fijo de desarrollo.
+    APP_PORT: int = int(os.getenv("PORT") or os.getenv("APP_PORT", "8000"))
     DEBUG: bool = os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
 
     # Configuración de Base de Datos MySQL

@@ -82,13 +82,20 @@ def actualizar_movimiento(
     response_model=MensajeResponse,
     status_code=status.HTTP_200_OK,
     summary="Eliminar un movimiento por ID",
-    description="Elimina de forma permanente un movimiento tras validar su existencia."
+    description=(
+        "Elimina de forma permanente un movimiento tras validar su existencia. "
+        "Si se indica `id_usuario`, se comprueba además que el movimiento le "
+        "pertenezca y se rechaza el borrado en caso contrario."
+    )
 )
 def eliminar_movimiento(
     id: int = Path(..., gt=0, description="Identificador del movimiento a eliminar"),
+    id_usuario: Optional[int] = Query(
+        None, gt=0, description="Identificador del usuario propietario; valida la pertenencia"
+    ),
     service: MovimientoService = Depends(get_movimiento_service)
 ) -> MensajeResponse:
     """
     Endpoint para eliminar un movimiento por ID.
     """
-    return service.eliminar_movimiento(id_movimiento=id)
+    return service.eliminar_movimiento(id_movimiento=id, id_usuario=id_usuario)
