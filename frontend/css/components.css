@@ -1,26 +1,33 @@
 /* ==========================================================================
-   COMPONENTS — Piezas reutilizables de la interfaz
-   Tarjetas, botones, formularios, tablas, indicadores, estados, diálogos.
+   COMPONENTS — Componentes de Interfaz de Finanzas Personales
+   KPI Cards, Gráficos, Botones, Formularios, Tablas, Badges, Diálogos y Estados
    ========================================================================== */
 
-/* --- Foco visible global --------------------------------------------------
-   Un único estilo de foco para todos los elementos interactivos. */
+/* --- Foco Visible Global (Accesibilidad) --- */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    outline: 3px solid var(--color-foco);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
     border-radius: var(--radio-sm);
 }
 
-/* --- Tarjetas ------------------------------------------------------------- */
+/* ==========================================================================
+   1. TARJETAS Y CONTENEDORES
+   ========================================================================== */
 .tarjeta {
-    background-color: var(--color-superficie);
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-lg);
-    box-shadow: var(--sombra-1);
-    padding: var(--espacio-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-xl);
+    box-shadow: var(--sombra-sm);
+    padding: var(--espacio-5);
     display: flex;
     flex-direction: column;
-    gap: var(--espacio-3);
+    gap: var(--espacio-4);
+    transition: box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.tarjeta:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--sombra-md);
 }
 
 .tarjeta__cabecera {
@@ -33,121 +40,316 @@
 
 .tarjeta__cabecera h3 {
     font-size: var(--texto-lg);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+}
+
+.tarjeta__subtitulo {
+    font-size: var(--texto-xs);
+    color: var(--color-muted);
+    margin-top: 0.15rem;
 }
 
 .contador {
-    font-size: var(--texto-sm);
-    color: var(--color-texto-suave);
+    font-size: var(--texto-xs);
+    font-weight: 600;
+    color: var(--color-muted);
+    background-color: var(--color-surface-alt);
+    padding: var(--espacio-1) var(--espacio-3);
+    border-radius: var(--radio-completo);
+    border: 1px solid var(--color-border);
 }
 
-/* --- Botones -------------------------------------------------------------- */
+/* ==========================================================================
+   2. KPI CARDS FINANCIERAS
+   ========================================================================== */
+.kpi-tarjeta {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-xl);
+    padding: var(--espacio-5);
+    box-shadow: var(--sombra-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.kpi-tarjeta:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-lg);
+    border-color: var(--color-border-strong);
+}
+
+.kpi-tarjeta__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.kpi-tarjeta__titulo {
+    font-size: var(--texto-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+}
+
+.kpi-tarjeta__icono {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radio-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.kpi-tarjeta__icono svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.kpi-tarjeta__icono--ingreso {
+    background-color: var(--color-success-subtle);
+    color: var(--color-success);
+}
+
+.kpi-tarjeta__icono--gasto {
+    background-color: var(--color-danger-subtle);
+    color: var(--color-danger);
+}
+
+.kpi-tarjeta__icono--balance {
+    background-color: var(--color-primary-subtle);
+    color: var(--color-primary);
+}
+
+.kpi-tarjeta__icono--prediccion {
+    background-color: var(--color-warning-subtle);
+    color: var(--color-warning-dark);
+}
+
+.kpi-tarjeta__valor {
+    font-size: var(--texto-2xl);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+    line-height: var(--interlineado-apretado);
+}
+
+.kpi-tarjeta--ingreso .kpi-tarjeta__valor {
+    color: var(--color-success);
+}
+
+.kpi-tarjeta--gasto .kpi-tarjeta__valor {
+    color: var(--color-danger);
+}
+
+.kpi-tarjeta--balance .kpi-tarjeta__valor {
+    color: var(--color-primary);
+}
+
+.kpi-tarjeta--balance.es-negativo .kpi-tarjeta__valor {
+    color: var(--color-danger);
+}
+
+.kpi-tarjeta--balance.es-negativo .kpi-tarjeta__icono {
+    background-color: var(--color-danger-subtle);
+    color: var(--color-danger);
+}
+
+.kpi-tarjeta__pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--texto-xs);
+    color: var(--color-muted);
+}
+
+.kpi-tarjeta__nota {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-1);
+}
+
+/* ==========================================================================
+   3. GRÁFICOS INTERACTIVOS (CHART.JS)
+   ========================================================================== */
+.tarjeta-grafico {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-xl);
+    box-shadow: var(--sombra-sm);
+    padding: var(--espacio-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.tarjeta-grafico__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tarjeta-grafico__cabecera h3 {
+    font-size: var(--texto-lg);
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.tarjeta-grafico__subtitulo {
+    font-size: var(--texto-xs);
+    color: var(--color-muted);
+}
+
+.grafico-contenedor {
+    position: relative;
+    width: 100%;
+    height: 18rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grafico-contenedor canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ==========================================================================
+   4. BOTONES Y ACCIONES
+   ========================================================================== */
 .boton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--espacio-2);
     min-height: var(--altura-tactil);
-    padding: var(--espacio-2) var(--espacio-4);
-    border-radius: var(--radio-md);
+    padding: var(--espacio-2) var(--espacio-5);
+    border-radius: var(--radio-lg);
     border: 1px solid transparent;
     font-size: var(--texto-sm);
     font-weight: 600;
     text-align: center;
-    transition: background-color var(--transicion), border-color var(--transicion), color var(--transicion);
+    transition: all var(--transicion-rapida);
+    user-select: none;
 }
 
 .boton:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+    box-shadow: none !important;
 }
 
 .boton--primario {
-    background-color: var(--color-primario);
-    color: var(--color-texto-inverso);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: #ffffff;
+    box-shadow: var(--sombra-sm), 0 2px 4px rgba(29, 78, 216, 0.2);
 }
 
 .boton--primario:hover:not(:disabled) {
-    background-color: var(--color-primario-hover);
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+    box-shadow: var(--sombra-md), var(--sombra-azul);
+    transform: translateY(-1px);
+}
+
+.boton--primario:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .boton--secundario {
-    background-color: var(--color-superficie);
-    border-color: var(--color-borde-fuerte);
-    color: var(--color-texto);
+    background-color: var(--color-surface);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+    box-shadow: var(--sombra-xs);
 }
 
 .boton--secundario:hover:not(:disabled) {
-    background-color: var(--color-superficie-hover);
-}
-
-.boton--sutil {
-    background-color: var(--color-primario-suave);
-    color: var(--color-primario);
-}
-
-.boton--sutil:hover:not(:disabled) {
-    background-color: var(--color-superficie-hover);
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-muted);
 }
 
 .boton--peligro {
-    background-color: var(--color-gasto);
-    color: var(--color-texto-inverso);
+    background: linear-gradient(135deg, var(--color-danger), var(--color-danger-dark));
+    color: #ffffff;
+    box-shadow: var(--sombra-sm), 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
 .boton--peligro:hover:not(:disabled) {
-    filter: brightness(0.92);
+    box-shadow: var(--sombra-md), 0 4px 12px rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
 }
 
-/* Variante discreta para acciones destructivas dentro de listados: el rojo
-   sólido se reserva para la confirmación, donde la acción se consuma. */
 .boton--peligro-sutil {
-    background-color: var(--color-superficie);
-    border-color: var(--color-gasto);
-    color: var(--color-gasto);
+    background-color: var(--color-surface);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--color-danger);
 }
 
 .boton--peligro-sutil:hover:not(:disabled) {
-    background-color: var(--color-gasto-suave);
+    background-color: var(--color-danger-subtle);
+    border-color: var(--color-danger);
 }
 
 .boton--pequeno {
     min-height: 2.25rem;
     padding: var(--espacio-1) var(--espacio-3);
     font-size: var(--texto-xs);
+    border-radius: var(--radio-md);
+}
+
+.boton--completo {
+    width: 100%;
 }
 
 .boton--icono {
     min-height: var(--altura-tactil);
     min-width: var(--altura-tactil);
     padding: 0;
-    font-size: var(--texto-xl);
-    line-height: 1;
-    color: var(--color-texto-suave);
+    font-size: var(--texto-lg);
+    color: var(--color-muted);
+    border-radius: var(--radio-md);
 }
 
 .boton--icono:hover {
-    color: var(--color-texto);
+    color: var(--color-text);
+    background-color: var(--color-surface-hover);
 }
 
-/* --- Formularios ---------------------------------------------------------- */
+.icono-btn {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   5. FORMULARIOS Y CAMPOS
+   ========================================================================== */
 .formulario legend {
     font-size: var(--texto-sm);
-    font-weight: 600;
-    color: var(--color-texto-suave);
+    font-weight: 700;
+    color: var(--color-text);
     padding-bottom: var(--espacio-2);
 }
 
 .formulario__campos {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--espacio-3);
+    gap: var(--espacio-4);
 }
 
 .formulario__acciones {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--espacio-2);
-    margin-top: var(--espacio-4);
+    gap: var(--espacio-3);
+    margin-top: var(--espacio-5);
 }
 
 .formulario__acciones--dialogo {
@@ -174,16 +376,18 @@
 .campo label {
     font-size: var(--texto-sm);
     font-weight: 600;
+    color: var(--color-text);
 }
 
 .campo__opcional {
     font-weight: 400;
-    color: var(--color-texto-suave);
+    color: var(--color-muted);
 }
 
 .campo__ayuda {
     font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
+    color: var(--color-muted);
+    line-height: var(--interlineado);
 }
 
 .campo input,
@@ -191,244 +395,164 @@
 .campo textarea {
     width: 100%;
     min-height: var(--altura-tactil);
-    padding: var(--espacio-2) var(--espacio-3);
-    background-color: var(--color-superficie);
-    border: 1px solid var(--color-borde-fuerte);
-    border-radius: var(--radio-md);
-    font-size: var(--texto-md);
-    transition: border-color var(--transicion), box-shadow var(--transicion);
+    padding: var(--espacio-2) var(--espacio-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radio-lg);
+    font-size: var(--texto-sm);
+    color: var(--color-text);
+    transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 
 .campo textarea {
     resize: vertical;
-    min-height: 4rem;
+    min-height: 5rem;
 }
 
 .campo input:hover,
 .campo select:hover,
 .campo textarea:hover {
-    border-color: var(--color-primario);
+    border-color: var(--color-primary-light);
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: none;
 }
 
 .campo input[aria-invalid="true"],
 .campo select[aria-invalid="true"],
 .campo textarea[aria-invalid="true"] {
-    border-color: var(--color-gasto);
+    border-color: var(--color-danger);
+    background-color: var(--color-danger-subtle);
 }
 
 .campo--compacto label {
     font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
+    color: var(--color-muted);
 }
 
 .campo--compacto input {
-    min-height: var(--altura-tactil);
+    min-height: 2.25rem;
+    padding: var(--espacio-1) var(--espacio-3);
+    font-size: var(--texto-xs);
 }
 
 .mensaje-error {
     margin-top: var(--espacio-3);
-    padding: var(--espacio-2) var(--espacio-3);
-    background-color: var(--color-gasto-suave);
-    border-left: 4px solid var(--color-gasto);
-    border-radius: var(--radio-sm);
-    color: var(--color-gasto);
+    padding: var(--espacio-3) var(--espacio-4);
+    background-color: var(--color-danger-subtle);
+    border-left: 4px solid var(--color-danger);
+    border-radius: var(--radio-md);
+    color: var(--color-danger-dark);
     font-size: var(--texto-sm);
+    font-weight: 500;
 }
 
-/* --- Indicadores del resumen --------------------------------------------- */
-.indicador {
-    height: 100%;
-    padding: var(--espacio-4);
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-md);
-    background-color: var(--color-superficie-alt);
-    display: flex;
-    flex-direction: column;
+/* ==========================================================================
+   6. PESTAÑAS SEGMENTADAS (SEGMENTED CONTROL)
+   ========================================================================== */
+.pestanas__lista {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--espacio-1);
+    padding: 0.35rem;
+    background-color: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-xl);
 }
 
-.indicador h4 {
+.pestanas__boton {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: var(--espacio-2);
+    border-radius: var(--radio-lg);
     font-size: var(--texto-sm);
     font-weight: 600;
-    color: var(--color-texto-suave);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    color: var(--color-muted);
+    transition: all var(--transicion-rapida);
 }
 
-.indicador__valor {
-    font-size: var(--texto-2xl);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    overflow-wrap: anywhere;
+.pestanas__boton:hover {
+    color: var(--color-text);
 }
 
-.indicador__nota {
-    font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
+.pestanas__boton[aria-current="page"] {
+    background-color: var(--color-surface);
+    color: var(--color-primary);
+    box-shadow: var(--sombra-sm);
 }
 
-.indicador--ingreso {
-    border-left: 4px solid var(--color-ingreso);
-}
-
-.indicador--ingreso .indicador__valor {
-    color: var(--color-ingreso);
-}
-
-.indicador--gasto {
-    border-left: 4px solid var(--color-gasto);
-}
-
-.indicador--gasto .indicador__valor {
-    color: var(--color-gasto);
-}
-
-.indicador--balance {
-    border-left: 4px solid var(--color-primario);
-}
-
-.indicador--balance .indicador__valor {
-    color: var(--color-primario);
-}
-
-.indicador--balance.es-negativo {
-    border-left-color: var(--color-gasto);
-}
-
-.indicador--balance.es-negativo .indicador__valor {
-    color: var(--color-gasto);
-}
-
-/* --- Barra de proporción -------------------------------------------------- */
-.proporcion {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espacio-2);
-}
-
-.proporcion figcaption {
-    font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
-}
-
-.proporcion__barra {
-    display: flex;
-    width: 100%;
-    height: 0.75rem;
-    border-radius: var(--radio-completo);
-    overflow: hidden;
-    background-color: var(--color-neutro-suave);
-}
-
-.proporcion__parte {
-    display: block;
-    height: 100%;
-    transition: width var(--transicion);
-}
-
-.proporcion__parte--ingreso {
-    background-color: var(--color-ingreso);
-}
-
-.proporcion__parte--gasto {
-    background-color: var(--color-gasto);
-}
-
-.proporcion__leyenda {
-    display: flex;
-    align-items: center;
-    gap: var(--espacio-2);
-    font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
-}
-
-.punto {
-    display: inline-block;
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: var(--radio-completo);
-}
-
-.punto--ingreso {
-    background-color: var(--color-ingreso);
-}
-
-.punto--gasto {
-    background-color: var(--color-gasto);
-    margin-left: var(--espacio-3);
-}
-
-/* --- Navegación ----------------------------------------------------------- */
-.navegacion__enlace {
-    display: block;
-    width: 100%;
-    min-height: var(--altura-tactil);
-    padding: var(--espacio-2) var(--espacio-3);
-    border-radius: var(--radio-md);
-    font-size: var(--texto-sm);
-    font-weight: 600;
-    color: var(--color-texto-suave);
-    transition: background-color var(--transicion), color var(--transicion);
-}
-
-.navegacion__enlace:hover {
-    background-color: var(--color-superficie-hover);
-    color: var(--color-texto);
-}
-
-.navegacion__enlace[aria-current="page"] {
-    background-color: var(--color-primario-suave);
-    color: var(--color-primario);
-}
-
-/* --- Tablas --------------------------------------------------------------- */
+/* ==========================================================================
+   7. TABLAS DE DATOS FINANCIEROS
+   ========================================================================== */
 .tabla-desplazable {
-    /* Contenedor sin significado semántico: aísla el scroll horizontal de la
-       tabla para que nunca lo herede el documento completo. */
     width: 100%;
     overflow-x: auto;
+    border-radius: var(--radio-lg);
+    border: 1px solid var(--color-border);
 }
 
 .tabla {
     font-size: var(--texto-sm);
+    text-align: left;
+    background-color: var(--color-surface);
 }
 
 .tabla__titulo {
     caption-side: bottom;
-    padding-top: var(--espacio-3);
+    padding: var(--espacio-3) var(--espacio-4);
     font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
-    text-align: left;
+    color: var(--color-muted);
 }
 
 .tabla thead th {
-    padding: var(--espacio-2) var(--espacio-3);
-    background-color: var(--color-superficie-alt);
-    border-bottom: 2px solid var(--color-borde);
+    padding: var(--espacio-3) var(--espacio-4);
+    background-color: var(--color-surface-alt);
+    border-bottom: 1px solid var(--color-border);
     font-size: var(--texto-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--color-texto-suave);
-    text-align: left;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
     white-space: nowrap;
 }
 
 .tabla tbody td {
-    padding: var(--espacio-3);
-    border-bottom: 1px solid var(--color-borde);
+    padding: var(--espacio-3) var(--espacio-4);
+    border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
+    color: var(--color-text);
+}
+
+.tabla tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tabla tbody tr {
+    transition: background-color var(--transicion-rapida);
 }
 
 .tabla tbody tr:hover {
-    background-color: var(--color-superficie-alt);
+    background-color: var(--color-surface-hover);
 }
 
 .celda--numerica {
     text-align: right;
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
     white-space: nowrap;
+}
+
+.celda--ingreso {
+    color: var(--color-success);
+}
+
+.celda--gasto {
+    color: var(--color-danger);
 }
 
 .celda--acciones {
@@ -437,76 +561,80 @@
     gap: var(--espacio-2);
 }
 
-.celda--ingreso {
-    color: var(--color-ingreso);
-    font-weight: 600;
-}
-
-.celda--gasto {
-    color: var(--color-gasto);
-    font-weight: 600;
-}
-
-/* --- Etiquetas de tipo ---------------------------------------------------- */
+/* ==========================================================================
+   8. BADGES Y ETIQUETAS SEMÁNTICAS
+   ========================================================================== */
 .etiqueta {
-    display: inline-block;
-    padding: 0.1rem var(--espacio-2);
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
     border-radius: var(--radio-completo);
     font-size: var(--texto-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
 }
 
 .etiqueta--ingreso {
-    background-color: var(--color-ingreso-suave);
-    color: var(--color-ingreso);
+    background-color: var(--color-success-subtle);
+    color: var(--color-success-dark);
 }
 
 .etiqueta--gasto {
-    background-color: var(--color-gasto-suave);
-    color: var(--color-gasto);
+    background-color: var(--color-danger-subtle);
+    color: var(--color-danger-dark);
 }
 
 .etiqueta--aviso {
-    background-color: var(--color-aviso-suave);
-    color: var(--color-aviso);
+    background-color: var(--color-warning-subtle);
+    color: var(--color-warning-dark);
 }
 
 .etiqueta--neutra {
-    background-color: var(--color-neutro-suave);
-    color: var(--color-texto-suave);
+    background-color: var(--color-surface-alt);
+    color: var(--color-muted);
+    border: 1px solid var(--color-border);
 }
 
-/* --- Estados de la interfaz (loading / empty / error) --------------------- */
+.etiqueta--info {
+    background-color: var(--color-info-subtle);
+    color: var(--color-info);
+}
+
+/* ==========================================================================
+   9. ESTADOS DE INTERFAZ (LOADING, EMPTY, ERROR, SUCCESS)
+   ========================================================================== */
 .estado {
-    padding: var(--espacio-4);
-    border-radius: var(--radio-md);
+    padding: var(--espacio-6) var(--espacio-4);
+    border-radius: var(--radio-xl);
     font-size: var(--texto-sm);
     text-align: center;
-    border: 1px dashed var(--color-borde-fuerte);
-    color: var(--color-texto-suave);
-    background-color: var(--color-superficie-alt);
+    border: 1px dashed var(--color-border-strong);
+    color: var(--color-muted);
+    background-color: var(--color-surface-alt);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
 }
 
 .estado--cargando::before {
     content: "";
     display: inline-block;
-    width: 0.9rem;
-    height: 0.9rem;
-    margin-right: var(--espacio-2);
-    vertical-align: -0.1rem;
-    border: 2px solid var(--color-borde-fuerte);
-    border-top-color: var(--color-primario);
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 3px solid var(--color-border-strong);
+    border-top-color: var(--color-primary);
     border-radius: var(--radio-completo);
     animation: girar 700ms linear infinite;
 }
 
 .estado--error {
     border-style: solid;
-    border-color: var(--color-gasto);
-    background-color: var(--color-gasto-suave);
-    color: var(--color-gasto);
+    border-color: var(--color-danger);
+    background-color: var(--color-danger-subtle);
+    color: var(--color-danger-dark);
 }
 
 .estado--vacio {
@@ -515,9 +643,9 @@
 
 .estado--exito {
     border-style: solid;
-    border-color: var(--color-ingreso);
-    background-color: var(--color-ingreso-suave);
-    color: var(--color-ingreso);
+    border-color: var(--color-success);
+    background-color: var(--color-success-subtle);
+    color: var(--color-success-dark);
 }
 
 @keyframes girar {
@@ -526,119 +654,151 @@
     }
 }
 
-/* --- Predicción ----------------------------------------------------------- */
+/* ==========================================================================
+   10. PREDICCIÓN ANALÍTICA Y LISTAS
+   ========================================================================== */
 .prediccion {
-    padding: var(--espacio-4);
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-md);
-    background-color: var(--color-superficie-alt);
+    padding: var(--espacio-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-xl);
+    background-color: var(--color-surface-alt);
     display: flex;
     flex-direction: column;
-    gap: var(--espacio-2);
+    gap: var(--espacio-3);
 }
 
 .prediccion__mes {
     font-size: var(--texto-sm);
-    font-weight: 600;
-    color: var(--color-texto-suave);
+    font-weight: 700;
+    color: var(--color-primary);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
 }
 
 .prediccion__valor {
     font-size: var(--texto-3xl);
-    font-weight: 700;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    color: var(--color-primario);
-    overflow-wrap: anywhere;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
 }
 
 .prediccion__detalle {
     font-size: var(--texto-sm);
-    color: var(--color-texto-suave);
+    color: var(--color-muted);
 }
 
 .lista-datos {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: var(--espacio-2) var(--espacio-4);
+    gap: var(--espacio-2) var(--espacio-5);
     font-size: var(--texto-sm);
     margin-top: var(--espacio-2);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--espacio-3);
 }
 
 .lista-datos dt {
     font-weight: 600;
-    color: var(--color-texto-suave);
+    color: var(--color-muted);
 }
 
 .lista-datos dd {
     margin: 0;
+    font-weight: 500;
+    color: var(--color-text);
 }
 
-/* --- Notas laterales ------------------------------------------------------ */
+/* ==========================================================================
+   11. NOTAS LATERALES Y CALLOUTS
+   ========================================================================== */
 .nota {
-    padding: var(--espacio-3) var(--espacio-4);
-    border-left: 4px solid var(--color-primario);
-    border-radius: var(--radio-sm);
-    background-color: var(--color-primario-suave);
+    padding: var(--espacio-4) var(--espacio-5);
+    border-left: 4px solid var(--color-primary);
+    border-radius: var(--radio-md);
+    background-color: var(--color-primary-subtle);
     font-size: var(--texto-sm);
+    line-height: var(--interlineado);
 }
 
-.nota h4 {
+.nota h4, .nota h3 {
     font-size: var(--texto-sm);
+    font-weight: 700;
+    color: var(--color-text);
     margin-bottom: var(--espacio-1);
+}
+
+.nota p {
+    color: var(--color-text-subtle);
 }
 
 .nota code {
     font-family: var(--fuente-mono);
     font-size: var(--texto-xs);
-    overflow-wrap: anywhere;
+    background-color: rgba(0, 0, 0, 0.06);
+    padding: 0.1rem 0.3rem;
+    border-radius: var(--radio-xs);
 }
 
-/* --- Diálogos ------------------------------------------------------------- */
+.nota--aviso {
+    border-left-color: var(--color-warning);
+    background-color: var(--color-warning-subtle);
+}
+
+.nota--info {
+    border-left-color: var(--color-info);
+    background-color: var(--color-info-subtle);
+}
+
+/* ==========================================================================
+   12. DIÁLOGOS MODALES (<dialog>)
+   ========================================================================== */
 .dialogo {
-    width: min(38rem, calc(100vw - 2rem));
+    width: min(36rem, calc(100vw - 2rem));
     margin: auto;
     padding: 0;
-    border-radius: var(--radio-lg);
-    background-color: var(--color-superficie);
-    color: var(--color-texto);
-    box-shadow: var(--sombra-3);
+    border-radius: var(--radio-2xl);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--sombra-xl);
+    border: 1px solid var(--color-border);
 }
 
 .dialogo--estrecho {
-    width: min(26rem, calc(100vw - 2rem));
+    width: min(28rem, calc(100vw - 2rem));
 }
 
 .dialogo .formulario,
 .dialogo__contenido {
-    padding: var(--espacio-4);
+    padding: var(--espacio-6);
     display: flex;
     flex-direction: column;
-    gap: var(--espacio-2);
+    gap: var(--espacio-3);
 }
 
 .dialogo__cabecera {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--espacio-3);
-    padding-bottom: var(--espacio-3);
-    border-bottom: 1px solid var(--color-borde);
-    margin-bottom: var(--espacio-3);
+    padding-bottom: var(--espacio-4);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--espacio-2);
 }
 
 .dialogo__cabecera h2 {
     font-size: var(--texto-xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
-/* --- Notificaciones efímeras ---------------------------------------------- */
+/* ==========================================================================
+   13. NOTIFICACIONES TOAST (EFÍMERAS)
+   ========================================================================== */
 .notificaciones {
     position: fixed;
-    inset-block-end: var(--espacio-4);
-    inset-inline: var(--espacio-4);
-    z-index: 60;
+    bottom: var(--espacio-5);
+    right: var(--espacio-5);
+    z-index: 100;
     display: flex;
     flex-direction: column;
     gap: var(--espacio-2);
@@ -646,114 +806,41 @@
 }
 
 .notificacion {
-    padding: var(--espacio-3) var(--espacio-4);
-    border-radius: var(--radio-md);
-    box-shadow: var(--sombra-2);
+    padding: var(--espacio-3) var(--espacio-5);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-lg);
     font-size: var(--texto-sm);
-    background-color: var(--color-superficie);
-    border: 1px solid var(--color-borde);
-    border-left: 4px solid var(--color-primario);
+    font-weight: 600;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-primary);
+    color: var(--color-text);
+    pointer-events: auto;
+    animation: deslizarToast var(--transicion-normal) ease-out;
+}
+
+@keyframes deslizarToast {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .notificacion--exito {
-    border-left-color: var(--color-ingreso);
-    color: var(--color-ingreso);
+    border-left-color: var(--color-success);
+    color: var(--color-success-dark);
 }
 
 .notificacion--error {
-    border-left-color: var(--color-gasto);
-    color: var(--color-gasto);
+    border-left-color: var(--color-danger);
+    color: var(--color-danger-dark);
 }
 
-/* --- Tarjeta de acceso ---------------------------------------------------- */
-.acceso__tarjeta {
-    width: 100%;
-    max-width: 34rem;
-    background-color: var(--color-superficie);
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-lg);
-    box-shadow: var(--sombra-2);
-    padding: var(--espacio-5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--espacio-4);
-}
-
-.acceso__cabecera {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--espacio-2);
-    text-align: center;
-}
-
-.acceso__icono {
-    width: 3rem;
-    height: 3rem;
-}
-
-.acceso__cabecera h1 {
-    font-size: var(--texto-2xl);
-    letter-spacing: -0.02em;
-}
-
-.acceso__lema {
-    font-size: var(--texto-sm);
-    color: var(--color-texto-suave);
-    max-width: 30ch;
-}
-
-.acceso__panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espacio-4);
-}
-
-/* --- Pestañas del acceso --- */
-.pestanas__lista {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--espacio-1);
-    padding: var(--espacio-1);
-    background-color: var(--color-superficie-alt);
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-md);
-}
-
-.pestanas__boton {
-    width: 100%;
-    min-height: var(--altura-tactil);
-    padding: var(--espacio-2);
-    border-radius: var(--radio-sm);
-    font-size: var(--texto-sm);
-    font-weight: 600;
-    color: var(--color-texto-suave);
-    transition: background-color var(--transicion), color var(--transicion);
-}
-
-.pestanas__boton:hover {
-    color: var(--color-texto);
-}
-
-.pestanas__boton[aria-current="page"] {
-    background-color: var(--color-superficie);
-    color: var(--color-primario);
-    box-shadow: var(--sombra-1);
-}
-
-/* --- Nota de aviso (limitación conocida) --- */
-.nota--aviso {
-    border-left-color: var(--color-aviso);
-    background-color: var(--color-aviso-suave);
-    color: var(--color-texto);
-}
-
-.nota--aviso h3 {
-    font-size: var(--texto-sm);
-    margin-bottom: var(--espacio-1);
-}
-
-/* --- Utilidad: contenido solo para lectores de pantalla ------------------- */
+/* --- Utilidad: Contenido solo para Lectores de Pantalla --- */
 .visualmente-oculto {
     position: absolute;
     width: 1px;

@@ -1,27 +1,61 @@
 /* ==========================================================================
-   RESPONSIVE — Adaptaciones por tamaño de pantalla
-   El diseño base (layout.css / components.css) es mobile first: aquí solo se
-   añaden mejoras progresivas a medida que hay más espacio disponible, salvo
-   la regla de tablas apiladas, que aplica únicamente a pantallas pequeñas.
-
-   Breakpoints:
-     hasta 47.99em (< 768 px) .... tablas apiladas en tarjetas
-     desde 30em    (480 px) ...... rejilla de campos e indicadores a 2 columnas
-     desde 48em    (768 px) ...... cabecera en línea, navegación horizontal
-     desde 64em    (1024 px) ..... indicadores a 3 columnas, rejilla doble
-     desde 90em    (1440 px) ..... mayor respiración vertical y tipografía
+   RESPONSIVE — Adaptaciones para Móvil, Tablet, Laptop y Escritorio Amplio
+   Breakpoints: 320px, 375px, 768px, 1024px, 1440px, 1920px
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   TABLAS APILADAS EN MÓVIL
-   Cada fila se convierte en una tarjeta y cada celda muestra su encabezado
-   mediante el atributo data-etiqueta. Evita el scroll horizontal en 320 px.
+   1. MÓVIL (< 768px / 47.99em)
    -------------------------------------------------------------------------- */
 @media (max-width: 47.99em) {
+    /* Login Split Screen en Móvil */
+    .acceso {
+        grid-template-columns: 1fr;
+    }
 
+    .acceso__branding {
+        padding: var(--espacio-5) var(--espacio-4);
+    }
+
+    .branding__contenido {
+        margin-block: var(--espacio-4);
+    }
+
+    .branding__titulo {
+        font-size: var(--texto-2xl);
+    }
+
+    .branding__tarjeta-previa {
+        display: none; /* Se simplifica en pantallas pequeñas para agilizar el acceso */
+    }
+
+    .acceso__formulario-panel {
+        padding: var(--espacio-5) var(--espacio-4);
+    }
+
+    /* Sidebar Drawer en Móvil */
+    .barra-lateral {
+        transform: translateX(-100%);
+        box-shadow: var(--sombra-xl);
+    }
+
+    .barra-lateral.abierta {
+        transform: translateX(0);
+    }
+
+    .boton-cerrar-sidebar {
+        display: flex;
+    }
+
+    .area-trabajo {
+        margin-left: 0;
+    }
+
+    .boton-menu-movil {
+        display: flex;
+    }
+
+    /* Tablas apilables en tarjetas para evitar scroll accidental */
     .tabla--apilable thead {
-        /* Oculto visualmente, pero los encabezados siguen expuestos vía
-           data-etiqueta en cada celda. */
         position: absolute;
         width: 1px;
         height: 1px;
@@ -33,10 +67,11 @@
     .tabla--apilable tbody tr {
         display: block;
         margin-bottom: var(--espacio-3);
-        border: 1px solid var(--color-borde);
-        border-radius: var(--radio-md);
-        background-color: var(--color-superficie-alt);
-        padding: var(--espacio-2);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radio-lg);
+        background-color: var(--color-surface);
+        padding: var(--espacio-3);
+        box-shadow: var(--sombra-xs);
     }
 
     .tabla--apilable tbody td {
@@ -44,9 +79,9 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: var(--espacio-3);
-        padding: var(--espacio-2);
-        border-bottom: 1px dashed var(--color-borde);
+        gap: var(--espacio-2);
+        padding: var(--espacio-2) 0;
+        border-bottom: 1px dashed var(--color-border);
         text-align: left;
     }
 
@@ -59,115 +94,123 @@
         font-size: var(--texto-xs);
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--color-texto-suave);
+        letter-spacing: 0.05em;
+        color: var(--color-muted);
     }
 
     .tabla--apilable .celda--acciones {
         justify-content: flex-end;
+        padding-top: var(--espacio-2);
+    }
+
+    .cabecera-superior {
+        padding-inline: var(--espacio-4);
+    }
+
+    .badge-moneda {
+        display: none;
     }
 }
 
 /* --------------------------------------------------------------------------
-   >= 480 px — Móviles grandes
+   2. >= 480px (Móviles Grandes / Phablets)
    -------------------------------------------------------------------------- */
 @media (min-width: 30em) {
-
     .formulario__campos {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .rejilla-indicadores {
+    .rejilla-kpis {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .navegacion__lista {
-        grid-template-columns: repeat(4, 1fr);
     }
 }
 
 /* --------------------------------------------------------------------------
-   >= 768 px — Tablet
+   3. >= 768px (Tablets)
    -------------------------------------------------------------------------- */
 @media (min-width: 48em) {
-
-    .cabecera__barra {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        padding-inline: var(--espacio-5);
+    .acceso {
+        grid-template-columns: 1fr 1fr;
     }
 
-    .marca {
-        font-size: var(--texto-xl);
+    .acceso__branding {
+        padding: var(--espacio-7) var(--espacio-6);
     }
 
-    .selector-usuario {
-        justify-content: flex-end;
-        max-width: 32rem;
-    }
-
-    .navegacion__lista {
+    .branding__tarjeta-previa {
         display: flex;
-        gap: var(--espacio-1);
-        padding-inline: var(--espacio-5);
     }
 
-    .navegacion__enlace {
-        width: auto;
-        padding-inline: var(--espacio-4);
+    .acceso__formulario-panel {
+        padding: var(--espacio-7) var(--espacio-6);
+    }
+
+    .cabecera-superior {
+        padding-inline: var(--espacio-6);
     }
 
     .contenido {
-        padding: var(--espacio-5);
+        padding: var(--espacio-6);
     }
 
-    .tarjeta {
-        padding: var(--espacio-5);
+    .rejilla-doble {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 /* --------------------------------------------------------------------------
-   >= 1024 px — Laptop
+   4. >= 1024px (Laptops / Escritorio)
    -------------------------------------------------------------------------- */
 @media (min-width: 64em) {
-
-    .rejilla-indicadores {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    .acceso {
+        grid-template-columns: 1.1fr 1fr;
     }
 
-    .rejilla-doble {
+    /* Sidebar estática a la izquierda */
+    .barra-lateral {
+        transform: translateX(0);
+    }
+
+    .boton-cerrar-sidebar {
+        display: none;
+    }
+
+    .boton-menu-movil {
+        display: none;
+    }
+
+    .area-trabajo {
+        margin-left: var(--ancho-sidebar);
+    }
+
+    .rejilla-kpis {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rejilla-graficos {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .formulario--filtros .formulario__campos {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-
-    .vista > h2 {
-        font-size: var(--texto-3xl);
-    }
 }
 
 /* --------------------------------------------------------------------------
-   >= 1440 px — Escritorio amplio
+   5. >= 1440px y 1920px (Escritorio Amplio)
    -------------------------------------------------------------------------- */
 @media (min-width: 90em) {
-
     .contenido {
-        padding-block: var(--espacio-6);
+        padding-block: var(--espacio-7);
     }
 
-    .vista {
-        gap: var(--espacio-5);
-    }
-
-    .tabla {
-        font-size: var(--texto-md);
+    .grafico-contenedor {
+        height: 20rem;
     }
 
     .notificaciones {
-        inset-inline: auto var(--espacio-6);
-        max-width: 26rem;
+        right: var(--espacio-7);
+        bottom: var(--espacio-7);
+        max-width: 28rem;
     }
 }

@@ -1,105 +1,179 @@
 /* ==========================================================================
-   VARIABLES — Design tokens de la aplicación
-   Un único lugar donde se definen colores, espaciados, tipografía y radios.
-   Cualquier ajuste visual global se hace aquí y se propaga al resto del CSS.
+   VARIABLES — Design Tokens y Sistema de Diseño de Finanzas Personales
+   Centralización de la identidad visual azul, paleta semántica, tipografía,
+   espaciados, radios de curvatura, sombras y soporte de modo oscuro.
    ========================================================================== */
 
 :root {
     color-scheme: light dark;
 
+    /* --- Identidad Visual Centralizada (Azul Financiero) --- */
+    --color-primary: #1d4ed8;
+    --color-primary-dark: #1e3a8a;
+    --color-primary-light: #3b82f6;
+    --color-primary-subtle: #eff6ff;
+    --color-primary-glow: rgba(29, 78, 216, 0.15);
+
+    /* --- Superficies y Fondos Neutros --- */
+    --color-background: #f8fafc;
+    --color-surface: #ffffff;
+    --color-surface-alt: #f1f5f9;
+    --color-surface-hover: #e2e8f0;
+    --color-surface-glass: rgba(255, 255, 255, 0.85);
+
+    /* --- Sidebar & Contraste --- */
+    --color-sidebar-bg: #0f172a;
+    --color-sidebar-surface: #1e293b;
+    --color-sidebar-hover: #334155;
+    --color-sidebar-text: #f8fafc;
+    --color-sidebar-muted: #94a3b8;
+    --color-sidebar-border: #1e293b;
+
+    /* --- Textos y Tipografía --- */
+    --color-text: #0f172a;
+    --color-text-subtle: #334155;
+    --color-muted: #64748b;
+    --color-text-inverse: #ffffff;
+
+    /* --- Bordes y Separadores --- */
+    --color-border: #e2e8f0;
+    --color-border-strong: #cbd5e1;
+
+    /* --- Estados Semánticos Financieros --- */
+    --color-success: #10b981;
+    --color-success-dark: #047857;
+    --color-success-subtle: #ecfdf5;
+
+    --color-danger: #ef4444;
+    --color-danger-dark: #b91c1c;
+    --color-danger-subtle: #fef2f2;
+
+    --color-warning: #f59e0b;
+    --color-warning-dark: #b45309;
+    --color-warning-subtle: #fffbeb;
+
+    --color-info: #0284c7;
+    --color-info-subtle: #f0f9ff;
+
+    /* Alias semánticos requeridos para el negocio */
+    --color-ingreso: var(--color-success);
+    --color-ingreso-subtle: var(--color-success-subtle);
+    --color-gasto: var(--color-danger);
+    --color-gasto-subtle: var(--color-danger-subtle);
+
+    /* Enfoque y Accesibilidad */
+    --color-focus: #2563eb;
+    --color-focus-ring: rgba(37, 99, 235, 0.35);
+
     /* --- Tipografía --- */
-    --fuente-base: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --fuente-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+    --fuente-base: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --fuente-mono: "JetBrains Mono", "Fira Code", SFMono-Regular, Consolas, monospace;
 
-    --texto-xs: 0.75rem;
-    --texto-sm: 0.875rem;
-    --texto-md: 1rem;
-    --texto-lg: 1.125rem;
-    --texto-xl: 1.375rem;
-    --texto-2xl: 1.75rem;
-    --texto-3xl: 2.125rem;
+    --texto-xs: 0.75rem;    /* 12px */
+    --texto-sm: 0.875rem;   /* 14px */
+    --texto-md: 1rem;       /* 16px */
+    --texto-lg: 1.125rem;   /* 18px */
+    --texto-xl: 1.25rem;    /* 20px */
+    --texto-2xl: 1.5rem;    /* 24px */
+    --texto-3xl: 1.875rem;  /* 30px */
+    --texto-4xl: 2.25rem;   /* 36px */
 
-    --interlineado: 1.55;
+    --interlineado-apretado: 1.2;
+    --interlineado: 1.5;
+    --interlineado-amplio: 1.65;
 
-    /* --- Espaciado (escala de 4 px) --- */
-    --espacio-1: 0.25rem;
-    --espacio-2: 0.5rem;
-    --espacio-3: 0.75rem;
-    --espacio-4: 1rem;
-    --espacio-5: 1.5rem;
-    --espacio-6: 2rem;
-    --espacio-7: 3rem;
+    /* --- Espaciado Sistemático (Múltiplos de 4px) --- */
+    --espacio-1: 0.25rem;   /* 4px */
+    --espacio-2: 0.5rem;    /* 8px */
+    --espacio-3: 0.75rem;   /* 12px */
+    --espacio-4: 1rem;      /* 16px */
+    --espacio-5: 1.25rem;   /* 20px */
+    --espacio-6: 1.5rem;    /* 24px */
+    --espacio-7: 2rem;      /* 32px */
+    --espacio-8: 2.5rem;    /* 40px */
+    --espacio-9: 3rem;      /* 48px */
 
-    /* --- Radios y sombras --- */
+    /* --- Radios de Curvatura --- */
+    --radio-xs: 0.25rem;
     --radio-sm: 0.375rem;
-    --radio-md: 0.625rem;
-    --radio-lg: 1rem;
-    --radio-completo: 999px;
+    --radio-md: 0.5rem;
+    --radio-lg: 0.75rem;
+    --radio-xl: 1rem;
+    --radio-2xl: 1.25rem;
+    --radio-completo: 9999px;
 
-    --sombra-1: 0 1px 2px rgb(15 23 42 / 6%), 0 1px 3px rgb(15 23 42 / 8%);
-    --sombra-2: 0 4px 12px rgb(15 23 42 / 10%);
-    --sombra-3: 0 18px 40px rgb(15 23 42 / 22%);
+    /* --- Sombras de Elevación --- */
+    --sombra-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --sombra-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
+    --sombra-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+    --sombra-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+    --sombra-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.09), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    --sombra-azul: 0 10px 25px -5px rgba(29, 78, 216, 0.25);
 
-    /* --- Medidas de layout --- */
-    --ancho-contenido: 78rem;
+    /* --- Dimensiones de Layout --- */
+    --ancho-sidebar: 16.5rem;
+    --altura-header: 4.25rem;
+    --ancho-max-contenido: 84rem;
     --altura-tactil: 2.75rem;
 
     /* --- Transiciones --- */
-    --transicion: 150ms ease;
-
-    /* --- Paleta: tema claro --- */
-    --color-fondo: #eef2f8;
-    --color-superficie: #ffffff;
-    --color-superficie-alt: #f6f8fc;
-    --color-superficie-hover: #eef2f9;
-    --color-borde: #d8dfeb;
-    --color-borde-fuerte: #b9c4d6;
-
-    --color-texto: #16223c;
-    --color-texto-suave: #55627c;
-    --color-texto-inverso: #ffffff;
-
-    --color-primario: #1d4ed8;
-    --color-primario-hover: #1740b4;
-    --color-primario-suave: #e3ebff;
-
-    --color-ingreso: #0b6b57;
-    --color-ingreso-suave: #d8f2ea;
-    --color-gasto: #a4232a;
-    --color-gasto-suave: #fce7e6;
-    --color-aviso: #8a5300;
-    --color-aviso-suave: #fdf0d5;
-    --color-neutro-suave: #e8edf5;
-
-    --color-foco: #b45309;
+    --transicion-rapida: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transicion-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transicion-suave: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- Paleta: tema oscuro (preferencia del sistema) --- */
+/* --- Paleta de Tema Oscuro --- */
 @media (prefers-color-scheme: dark) {
     :root {
-        --color-fondo: #0d1424;
-        --color-superficie: #151d31;
-        --color-superficie-alt: #1b2439;
-        --color-superficie-hover: #222d47;
-        --color-borde: #2b3752;
-        --color-borde-fuerte: #3d4c6d;
+        --color-primary: #3b82f6;
+        --color-primary-dark: #60a5fa;
+        --color-primary-light: #93c5fd;
+        --color-primary-subtle: rgba(59, 130, 246, 0.12);
+        --color-primary-glow: rgba(59, 130, 246, 0.25);
 
-        --color-texto: #e8edf8;
-        --color-texto-suave: #a5b1c8;
-        --color-texto-inverso: #0d1424;
+        --color-background: #090d16;
+        --color-surface: #111827;
+        --color-surface-alt: #1a2234;
+        --color-surface-hover: #242e44;
+        --color-surface-glass: rgba(17, 24, 39, 0.85);
 
-        --color-primario: #7aa2ff;
-        --color-primario-hover: #9ab8ff;
-        --color-primario-suave: #1e2b4d;
+        --color-sidebar-bg: #080c14;
+        --color-sidebar-surface: #111827;
+        --color-sidebar-hover: #1e293b;
+        --color-sidebar-text: #f8fafc;
+        --color-sidebar-muted: #818cf8;
+        --color-sidebar-border: #1a2234;
 
-        --color-ingreso: #56d6b0;
-        --color-ingreso-suave: #123a33;
-        --color-gasto: #ff8f88;
-        --color-gasto-suave: #3d1d1f;
-        --color-aviso: #f0c169;
-        --color-aviso-suave: #3a2d12;
-        --color-neutro-suave: #222d47;
+        --color-text: #f8fafc;
+        --color-text-subtle: #cbd5e1;
+        --color-muted: #94a3b8;
+        --color-text-inverse: #090d16;
 
-        --color-foco: #f6c360;
+        --color-border: #1e293b;
+        --color-border-strong: #334155;
+
+        --color-success: #34d399;
+        --color-success-dark: #6ee7b7;
+        --color-success-subtle: rgba(52, 211, 153, 0.12);
+
+        --color-danger: #f87171;
+        --color-danger-dark: #fca5a5;
+        --color-danger-subtle: rgba(248, 113, 113, 0.12);
+
+        --color-warning: #fbbf24;
+        --color-warning-dark: #fde68a;
+        --color-warning-subtle: rgba(251, 191, 36, 0.12);
+
+        --color-info: #38bdf8;
+        --color-info-subtle: rgba(56, 189, 248, 0.12);
+
+        --color-focus: #60a5fa;
+        --color-focus-ring: rgba(96, 165, 250, 0.4);
+
+        --sombra-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --sombra-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+        --sombra-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        --sombra-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.45);
+        --sombra-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
 }

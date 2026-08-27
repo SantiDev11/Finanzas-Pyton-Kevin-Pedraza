@@ -1,11 +1,9 @@
 /**
  * ui.js — Utilidades de presentación compartidas por todos los módulos.
  *
- * Aquí vive todo lo que toca el DOM de forma genérica: formateo de importes y
- * fechas, estados de carga/vacío/error, notificaciones y diálogos. Los módulos
- * de negocio (movimientos, categorías, resumen, análisis) no repiten este
- * código ni construyen HTML con innerHTML: siempre se usa textContent, de modo
- * que ningún dato del backend puede inyectarse como marcado.
+ * Formateo monetario en COP (Pesos Colombianos), formateo de fechas y meses,
+ * estados visuales (loading, empty, error, success), notificaciones toast,
+ * control de diálogos modales y protección contra inyección HTML.
  */
 (function (App) {
     "use strict";
@@ -13,16 +11,8 @@
     var CONFIG = App.CONFIG;
 
     /**
-     * Formateador monetario de toda la aplicación: peso colombiano.
-     *
-     * Se usa currencyDisplay "code" para que el importe se muestre siempre
-     * como «COP 1.500.000,00» y nunca con el símbolo «$», que se confundiría
-     * con el dólar. Se conservan dos decimales porque la columna `monto` de
-     * MySQL es DECIMAL(12,2): redondear a pesos enteros mostraría una cifra
-     * distinta de la almacenada.
-     *
-     * El formato es solo presentación: lo que viaja a la API sigue siendo un
-     * número sin separadores ni símbolos.
+     * Formateador monetario: Peso Colombiano (COP).
+     * Muestra formato estándar colombiano con código COP y 2 decimales exactos.
      */
     var formateadorMoneda = new Intl.NumberFormat(CONFIG.LOCALIZACION, {
         style: "currency",
@@ -32,51 +22,48 @@
         maximumFractionDigits: 2
     });
 
-    /* Formateador numérico simple, sin moneda, para valores estadísticos. */
+    /** Formateador numérico simple para Z-Score y estadísticas */
     var formateadorDecimal = new Intl.NumberFormat(CONFIG.LOCALIZACION, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
 
     var NOMBRES_MES = [
-        "enero", "febrero", "marzo", "abril", "mayo", "junio",
-        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ];
 
-    /** Atajo de document.querySelector. */
     function elemento(selector) {
         return document.querySelector(selector);
     }
 
-    /** Elimina todos los hijos de un nodo. */
     function vaciar(nodo) {
-        while (nodo.firstChild) {
+        while (nodo && nodo.firstChild) {
             nodo.removeChild(nodo.firstChild);
         }
     }
 
-    /** Convierte a número los importes, que la API serializa como cadena. */
     function aNumero(valor) {
         var numero = Number(valor);
         return Number.isFinite(numero) ? numero : null;
     }
 
-    /** Formatea un importe en pesos colombianos. "—" si no es numérico. */
+    /** Formatea un importe en pesos colombianos: e.g. "COP 1.500.000,00" */
     function formatearImporte(valor) {
         var numero = aNumero(valor);
-        return numero === null ? "—" : formateadorMoneda.format(numero);
+        if (numero === null) {
+            return "—";
+        }
+        return formateadorMoneda.format(numero);
     }
 
-    /** Formatea un número decimal simple (por ejemplo un Z-Score). */
+    /** Formatea un número decimal simple: e.g. "1,85" */
     function formatearDecimal(valor) {
         var numero = aNumero(valor);
         return numero === null ? "—" : formateadorDecimal.format(numero);
     }
 
-    /**
-     * Formatea una fecha ISO (YYYY-MM-DD) como DD/MM/AAAA.
-     * Se parsea manualmente para no depender de la zona horaria del navegador.
-     */
+    /** Formatea una fecha ISO (YYYY-MM-DD) a DD/MM/AAAA sin desfases de zona horaria */
     function formatearFecha(iso) {
         if (typeof iso !== "string") {
             return "—";
@@ -88,7 +75,7 @@
         return partes[2] + "/" + partes[1] + "/" + partes[0];
     }
 
-    /** Convierte "2026-08" en "agosto de 2026". */
+    /** Convierte "2026-08" en "Agosto de 2026" */
     function formatearMes(mes) {
         if (typeof mes !== "string" || mes.length < 7) {
             return "—";
@@ -101,13 +88,13 @@
         return NOMBRES_MES[indice] + " de " + anio;
     }
 
-    /** Devuelve el mes actual en formato YYYY-MM. */
+    /** Devuelve el periodo mensual actual en formato YYYY-MM */
     function mesActual() {
         var hoy = new Date();
         return hoy.getFullYear() + "-" + String(hoy.getMonth() + 1).padStart(2, "0");
     }
 
-    /** Devuelve la fecha de hoy en formato YYYY-MM-DD. */
+    /** Devuelve la fecha actual en formato YYYY-MM-DD */
     function fechaHoy() {
         var hoy = new Date();
         return [
@@ -118,11 +105,10 @@
     }
 
     /**
-     * Pinta uno de los cuatro estados de interfaz sobre su elemento contenedor.
-     *
-     * @param {HTMLElement} nodo Elemento de estado (role="status").
+     * Muestra uno de los estados de interfaz sobre su elemento contenedor.
+     * @param {HTMLElement} nodo
      * @param {"cargando"|"vacio"|"error"|"exito"} tipo
-     * @param {string} mensaje Texto visible para la persona usuaria.
+     * @param {string} mensaje
      */
     function mostrarEstado(nodo, tipo, mensaje) {
         if (!nodo) {
@@ -133,14 +119,12 @@
         nodo.hidden = false;
     }
 
-    /** Oculta el bloque de estado (caso "success" con datos en pantalla). */
     function ocultarEstado(nodo) {
         if (nodo) {
             nodo.hidden = true;
         }
     }
 
-    /** Muestra un mensaje de error dentro de un formulario. */
     function mostrarErrorFormulario(nodo, mensaje) {
         if (!nodo) {
             return;
@@ -149,7 +133,6 @@
         nodo.hidden = false;
     }
 
-    /** Limpia el mensaje de error de un formulario. */
     function limpiarErrorFormulario(nodo) {
         if (!nodo) {
             return;
@@ -158,7 +141,6 @@
         nodo.hidden = true;
     }
 
-    /** Crea una celda de tabla con su etiqueta para la vista apilada en móvil. */
     function crearCelda(texto, etiqueta, clase) {
         var celda = document.createElement("td");
         celda.textContent = texto;
@@ -171,7 +153,6 @@
         return celda;
     }
 
-    /** Crea la etiqueta visual de tipo (ingreso / gasto). */
     function crearEtiquetaTipo(tipo) {
         var etiqueta = document.createElement("span");
         etiqueta.className = "etiqueta etiqueta--" + (tipo === "ingreso" ? "ingreso" : "gasto");
@@ -179,7 +160,7 @@
         return etiqueta;
     }
 
-    /** Muestra una notificación efímera en la esquina inferior. */
+    /** Notificación flotante tipo toast */
     function notificar(mensaje, tipo) {
         var contenedor = document.getElementById("notificaciones");
         if (!contenedor) {
@@ -194,7 +175,6 @@
         }, 4500);
     }
 
-    /** Abre un <dialog> y coloca el foco en su primer campo utilizable. */
     function abrirDialogo(dialogo, elementoFoco) {
         if (!dialogo) {
             return;
@@ -209,7 +189,6 @@
         }
     }
 
-    /** Cierra un <dialog>. */
     function cerrarDialogo(dialogo) {
         if (!dialogo) {
             return;
@@ -221,7 +200,6 @@
         }
     }
 
-    /** Extrae el mensaje presentable de cualquier error capturado. */
     function mensajeDeExcepcion(error) {
         if (error && error.esErrorApi && error.message) {
             return error.message;

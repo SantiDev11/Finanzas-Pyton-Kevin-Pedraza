@@ -1,27 +1,31 @@
 /**
- * app.js — Página del panel (dashboard.html).
+ * app.js — Controlador principal del Panel de Control (dashboard.html).
  *
- * Se ocupa de tres cosas:
- *   1. exigir sesión antes de mostrar nada (guardián de acceso);
- *   2. arrancar los módulos de negocio con el usuario autenticado;
- *   3. navegar entre las cuatro vistas del panel.
- *
- * El backend no tiene sesiones ni tokens: cada endpoint identifica al
- * propietario de los datos con el parámetro id_usuario, y todas las vistas
- * trabajan exclusivamente con el usuario que abrió la sesión en index.html.
+ * Responsabilidades:
+ *   1. Exigir sesión válida antes de mostrar la interfaz (guardián de acceso).
+ *   2. Inicializar los módulos funcionales con el usuario autenticado.
+ *   3. Gestionar la navegación lateral (Sidebar) y migas de pan.
+ *   4. Controlar el menú responsive en móviles y tablets.
  */
 (function (App) {
     "use strict";
 
     var Sesion = App.Sesion;
 
-    /** Usuario de la sesión activa; null mientras el guardián no lo fija. */
+    /** ID del usuario de la sesión activa */
     var idUsuario = null;
 
-    /** Vista visible en este momento. */
+    /** Vista actualmente visible */
     var vistaActiva = "panel";
 
-    /** Cargador de datos asociado a cada vista. */
+    var TITULOS_VISTA = {
+        panel: "Dashboard",
+        movimientos: "Movimientos",
+        categorias: "Categorías",
+        analisis: "Análisis"
+    };
+
+    /** Cargador de datos asociado a cada vista */
     var CARGADORES = {
         panel: function () { return App.Dashboard.cargar(idUsuario); },
         movimientos: function () { return App.Movimientos.cargar(idUsuario); },
@@ -36,17 +40,23 @@
             cabecera: document.getElementById("cabecera-aplicacion"),
             contenido: document.getElementById("contenido"),
             pie: document.getElementById("pie-aplicacion"),
-            etiquetaUsuario: document.getElementById("sesion-usuario"),
+            tituloSeccion: document.getElementById("titulo-seccion-actual"),
+            sesionUsuarioSidebar: document.getElementById("sesion-usuario-sidebar"),
+            avatarUsuario: document.getElementById("avatar-usuario"),
             botonCerrarSesion: document.getElementById("boton-cerrar-sesion"),
-            enlaces: Array.prototype.slice.call(document.querySelectorAll(".navegacion__enlace")),
+
+            // Menú lateral y responsive
+            barraLateral: document.getElementById("barra-lateral"),
+            sidebarBackdrop: document.getElementById("sidebar-backdrop"),
+            botonMenuMovil: document.getElementById("boton-menu-movil"),
+            botonCerrarSidebar: document.getElementById("boton-cerrar-sidebar"),
+
+            enlaces: Array.prototype.slice.call(document.querySelectorAll(".menu-lateral__enlace")),
             vistas: Array.prototype.slice.call(document.querySelectorAll(".vista"))
         };
     }
 
-    /**
-     * Usuario sobre el que operan todos los módulos.
-     * @throws {Error} si se invoca sin sesión iniciada.
-     */
+    /** Devuelve el ID de usuario activo */
     function usuarioActivo() {
         if (idUsuario === null) {
             throw new Error("No hay ninguna sesión activa.");
@@ -55,10 +65,32 @@
     }
 
     /* ======================================================================
-       NAVEGACIÓN
+       CONTROL DEL SIDEBAR RESPONSIVE
        ====================================================================== */
 
-    /** Muestra una vista, actualiza la navegación y carga sus datos. */
+    function abrirSidebar() {
+        if (nodos.barraLateral) {
+            nodos.barraLateral.classList.add("abierta");
+        }
+        if (nodos.sidebarBackdrop) {
+            nodos.sidebarBackdrop.classList.add("activo");
+        }
+    }
+
+    function cerrarSidebar() {
+        if (nodos.barraLateral) {
+            nodos.barraLateral.classList.remove("abierta");
+        }
+        if (nodos.sidebarBackdrop) {
+            nodos.sidebarBackdrop.classList.remove("activo");
+        }
+    }
+
+    /* ======================================================================
+       NAVEGACIÓN ENTRE VISTAS
+       ====================================================================== */
+
+    /** Muestra una vista, actualiza la navegación y carga sus datos */
     function cambiarVista(nombre) {
         vistaActiva = nombre;
 
@@ -74,13 +106,15 @@
             }
         });
 
+        if (nodos.tituloSeccion) {
+            nodos.tituloSeccion.textContent = TITULOS_VISTA[nombre] || nombre;
+        }
+
+        cerrarSidebar();
         return CARGADORES[nombre]();
     }
 
-    /**
-     * Refresco tras crear, editar o eliminar un movimiento: la vista visible
-     * vuelve a pedir sus datos al backend, que es la fuente de verdad.
-     */
+    /** Refresca los datos de la vista activa tras una mutación */
     function refrescarDatosDependientes() {
         return CARGADORES[vistaActiva]();
     }
@@ -89,29 +123,30 @@
        GUARDIÁN DE ACCESO
        ====================================================================== */
 
-    /** Revela la aplicación una vez confirmada la sesión. */
     function mostrarAplicacion() {
-        nodos.cabecera.hidden = false;
-        nodos.contenido.hidden = false;
-        nodos.pie.hidden = false;
-        nodos.etiquetaUsuario.textContent = "usuario #" + idUsuario;
+        if (nodos.cabecera) {
+            nodos.cabecera.hidden = false;
+        }
+        if (nodos.contenido) {
+            nodos.contenido.hidden = false;
+        }
+        if (nodos.pie) {
+            nodos.pie.hidden = false;
+        }
+        if (nodos.sesionUsuarioSidebar) {
+            nodos.sesionUsuarioSidebar.textContent = "Usuario #" + idUsuario;
+        }
+        if (nodos.avatarUsuario) {
+            nodos.avatarUsuario.textContent = "U" + idUsuario;
+        }
     }
 
-    /** Cierra la sesión y devuelve a la página de acceso. */
     function cerrarSesion() {
         Sesion.borrar();
         idUsuario = null;
         Sesion.irAlAcceso();
     }
 
-    /**
-     * Comprueba que hay sesión y que el usuario sigue existiendo en la base de
-     * datos. Sin sesión válida no se muestra el panel: se vuelve al acceso.
-     * La sesión se borra antes de redirigir, de modo que index.html no pueda
-     * devolvernos aquí y provocar un rebote.
-     *
-     * @returns {Promise<boolean>} true si el acceso es válido.
-     */
     async function exigirSesion() {
         var guardado = Sesion.obtener();
         if (guardado === null) {
@@ -130,11 +165,26 @@
     }
 
     /* ======================================================================
-       ARRANQUE
+       INICIALIZACIÓN
        ====================================================================== */
 
     function registrarEventos() {
-        nodos.botonCerrarSesion.addEventListener("click", cerrarSesion);
+        if (nodos.botonCerrarSesion) {
+            nodos.botonCerrarSesion.addEventListener("click", cerrarSesion);
+        }
+
+        if (nodos.botonMenuMovil) {
+            nodos.botonMenuMovil.addEventListener("click", abrirSidebar);
+        }
+
+        if (nodos.botonCerrarSidebar) {
+            nodos.botonCerrarSidebar.addEventListener("click", cerrarSidebar);
+        }
+
+        if (nodos.sidebarBackdrop) {
+            nodos.sidebarBackdrop.addEventListener("click", cerrarSidebar);
+        }
+
         nodos.enlaces.forEach(function (enlace) {
             enlace.addEventListener("click", function () {
                 cambiarVista(enlace.dataset.vista);

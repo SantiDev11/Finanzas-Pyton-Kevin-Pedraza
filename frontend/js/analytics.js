@@ -6,8 +6,7 @@
  *   GET /api/analitica/anomalias?id_usuario=
  *
  * Todo lo que se muestra procede del backend: aquí no se estima, no se
- * extrapola y no se calcula ningún Z-Score. Cuando el histórico es
- * insuficiente se explica la situación en lugar de inventar un número.
+ * extrapola y no se calcula ningún Z-Score en el cliente.
  */
 (function (App) {
     "use strict";
@@ -20,21 +19,18 @@
         "Registra movimientos de al menos dos meses distintos.";
 
     var DESCRIPCION_CONFIANZA = {
-        alta: "Confianza alta: seis meses o más de histórico.",
-        media: "Confianza media: entre dos y cinco meses de histórico.",
-        baja: "Confianza baja: histórico insuficiente para una regresión."
+        alta: "Confianza alta (historial amplio ≥ 6 meses)",
+        media: "Confianza media (2 a 5 meses de historial)",
+        baja: "Confianza baja (historial inicial)"
     };
 
     var nodos = {};
 
     function capturarNodos() {
         nodos = {
-            // Tarjeta compacta del panel
-            estadoPanel: document.getElementById("estado-prediccion-panel"),
-            panel: document.getElementById("prediccion-panel"),
+            // KPI Card del Panel
             panelMes: document.getElementById("panel-prediccion-mes"),
             panelValor: document.getElementById("panel-prediccion-valor"),
-            panelConfianza: document.getElementById("panel-prediccion-confianza"),
 
             // Vista de análisis
             estadoPrediccion: document.getElementById("estado-prediccion"),
@@ -54,9 +50,9 @@
         };
     }
 
-    /** Una predicción es utilizable si el backend procesó algún mes de gastos. */
+    /** Una predicción es utilizable si el backend procesó algún mes de gastos */
     function tieneDatosSuficientes(prediccion) {
-        return prediccion.meses_procesados > 0 && Boolean(prediccion.mes_predicho);
+        return prediccion && prediccion.meses_procesados > 0 && Boolean(prediccion.mes_predicho);
     }
 
     function textoConfianza(prediccion) {
@@ -64,29 +60,32 @@
     }
 
     /* ======================================================================
-       PREDICCIÓN — TARJETA DEL PANEL
+       PREDICCIÓN — KPI CARD DEL PANEL
        ====================================================================== */
 
     async function cargarPrediccionPanel(idUsuario) {
-        UI.mostrarEstado(nodos.estadoPanel, "cargando", "Calculando predicción…");
-        nodos.panel.hidden = true;
+        if (nodos.panelValor) {
+            nodos.panelValor.textContent = "…";
+        }
 
         try {
             var prediccion = await Api.analitica.prediccion(idUsuario);
 
             if (!tieneDatosSuficientes(prediccion)) {
-                UI.mostrarEstado(nodos.estadoPanel, "vacio", MENSAJE_SIN_HISTORICO);
+                if (nodos.panelValor) nodos.panelValor.textContent = "—";
+                if (nodos.panelMes) nodos.panelMes.textContent = "Historial insuficiente";
                 return;
             }
 
-            nodos.panelMes.textContent = UI.formatearMes(prediccion.mes_predicho);
-            nodos.panelValor.textContent = UI.formatearImporte(prediccion.gasto_estimado);
-            nodos.panelConfianza.textContent = textoConfianza(prediccion);
-
-            UI.ocultarEstado(nodos.estadoPanel);
-            nodos.panel.hidden = false;
+            if (nodos.panelMes) {
+                nodos.panelMes.textContent = "Para " + UI.formatearMes(prediccion.mes_predicho);
+            }
+            if (nodos.panelValor) {
+                nodos.panelValor.textContent = UI.formatearImporte(prediccion.gasto_estimado);
+            }
         } catch (error) {
-            UI.mostrarEstado(nodos.estadoPanel, "error", UI.mensajeDeExcepcion(error));
+            if (nodos.panelValor) nodos.panelValor.textContent = "—";
+            if (nodos.panelMes) nodos.panelMes.textContent = "No disponible";
         }
     }
 
@@ -95,8 +94,10 @@
        ====================================================================== */
 
     async function cargarPrediccion(idUsuario) {
-        UI.mostrarEstado(nodos.estadoPrediccion, "cargando", "Calculando predicción…");
-        nodos.detalle.hidden = true;
+        UI.mostrarEstado(nodos.estadoPrediccion, "cargando", "Calculando predicción con regresión lineal…");
+        if (nodos.detalle) {
+            nodos.detalle.hidden = true;
+        }
 
         try {
             var prediccion = await Api.analitica.prediccion(idUsuario);
@@ -106,14 +107,16 @@
                 return;
             }
 
-            nodos.mes.textContent = "Gasto estimado para " + UI.formatearMes(prediccion.mes_predicho);
-            nodos.valor.textContent = UI.formatearImporte(prediccion.gasto_estimado);
-            nodos.confianza.textContent = prediccion.confianza + " — " + textoConfianza(prediccion);
-            nodos.meses.textContent = String(prediccion.meses_procesados);
-            nodos.razon.textContent = prediccion.razon;
+            if (nodos.mes) nodos.mes.textContent = "Gasto estimado para " + UI.formatearMes(prediccion.mes_predicho);
+            if (nodos.valor) nodos.valor.textContent = UI.formatearImporte(prediccion.gasto_estimado);
+            if (nodos.confianza) nodos.confianza.textContent = textoConfianza(prediccion);
+            if (nodos.meses) nodos.meses.textContent = String(prediccion.meses_procesados) + " meses";
+            if (nodos.razon) nodos.razon.textContent = prediccion.razon;
 
             UI.ocultarEstado(nodos.estadoPrediccion);
-            nodos.detalle.hidden = false;
+            if (nodos.detalle) {
+                nodos.detalle.hidden = false;
+            }
         } catch (error) {
             UI.mostrarEstado(nodos.estadoPrediccion, "error", UI.mensajeDeExcepcion(error));
         }
@@ -124,9 +127,13 @@
        ====================================================================== */
 
     async function cargarAnomalias(idUsuario) {
-        UI.mostrarEstado(nodos.estadoAnomalias, "cargando", "Analizando gastos…");
-        nodos.tablaAnomalias.hidden = true;
-        nodos.contadorAnomalias.textContent = "";
+        UI.mostrarEstado(nodos.estadoAnomalias, "cargando", "Analizando anomalías estadísticas con Z-Score…");
+        if (nodos.tablaAnomalias) {
+            nodos.tablaAnomalias.hidden = true;
+        }
+        if (nodos.contadorAnomalias) {
+            nodos.contadorAnomalias.textContent = "";
+        }
 
         try {
             var resultado = await Api.analitica.anomalias(idUsuario);
@@ -136,16 +143,17 @@
         }
     }
 
-    /** Una respuesta sin anomalías es un resultado válido, no un error. */
     function renderizarAnomalias(resultado) {
         UI.vaciar(nodos.cuerpoAnomalias);
 
-        var lista = resultado.anomalias || [];
+        var lista = (resultado && resultado.anomalias) || [];
         if (!lista.length) {
-            nodos.tablaAnomalias.hidden = true;
-            nodos.contadorAnomalias.textContent =
-                resultado.total_gastos_analizados + " gastos analizados";
-            UI.mostrarEstado(nodos.estadoAnomalias, "exito", "No se detectaron anomalías.");
+            if (nodos.tablaAnomalias) nodos.tablaAnomalias.hidden = true;
+            if (nodos.contadorAnomalias) {
+                nodos.contadorAnomalias.textContent =
+                    (resultado ? resultado.total_gastos_analizados : 0) + " gastos analizados";
+            }
+            UI.mostrarEstado(nodos.estadoAnomalias, "exito", "No se detectaron anomalías en los gastos registrados.");
             return;
         }
 
@@ -154,7 +162,7 @@
 
             fila.appendChild(UI.crearCelda(UI.formatearFecha(anomalia.fecha), "Fecha"));
             fila.appendChild(UI.crearCelda(
-                UI.formatearImporte(anomalia.monto), "Monto", "celda--numerica celda--gasto"
+                UI.formatearImporte(anomalia.monto), "Monto (COP)", "celda--numerica celda--gasto"
             ));
             fila.appendChild(UI.crearCelda(App.Categorias.nombreDe(anomalia.id_categoria), "Categoría"));
 
@@ -170,17 +178,20 @@
             nodos.cuerpoAnomalias.appendChild(fila);
         });
 
-        nodos.contadorAnomalias.textContent =
-            resultado.total_anomalias + " de " + resultado.total_gastos_analizados +
-            " gastos superan el umbral |Z| > " + UI.formatearDecimal(resultado.umbral_z_score);
+        if (nodos.contadorAnomalias) {
+            nodos.contadorAnomalias.textContent =
+                resultado.total_anomalias + " de " + resultado.total_gastos_analizados +
+                " gastos superan el umbral |Z| > " + UI.formatearDecimal(resultado.umbral_z_score);
+        }
 
         UI.ocultarEstado(nodos.estadoAnomalias);
-        nodos.tablaAnomalias.hidden = false;
+        if (nodos.tablaAnomalias) {
+            nodos.tablaAnomalias.hidden = false;
+        }
     }
 
     /* ====================================================================== */
 
-    /** Carga completa de la vista de análisis. */
     function cargar(idUsuario) {
         return Promise.all([
             cargarPrediccion(idUsuario),
@@ -190,9 +201,11 @@
 
     function inicializar() {
         capturarNodos();
-        nodos.botonRecargar.addEventListener("click", function () {
-            cargar(App.usuarioActivo());
-        });
+        if (nodos.botonRecargar) {
+            nodos.botonRecargar.addEventListener("click", function () {
+                cargar(App.usuarioActivo());
+            });
+        }
     }
 
     App.Analytics = {

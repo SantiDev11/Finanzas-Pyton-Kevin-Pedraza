@@ -1,114 +1,487 @@
 /* ==========================================================================
-   LAYOUT — Estructura general de la página (mobile first)
-   Cabecera, navegación, rejillas del contenido y pie.
+   LAYOUT — Estructura y Arquitectura Visual (Mobile First)
+   Login Split-Screen, Shell con Sidebar lateral, Header superior y Rejillas
    ========================================================================== */
 
 body {
     font-family: var(--fuente-base);
     font-size: var(--texto-md);
     line-height: var(--interlineado);
-    color: var(--color-texto);
-    background-color: var(--color-fondo);
+    color: var(--color-text);
+    background-color: var(--color-background);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* Evita desbordes horizontales accidentales en pantallas pequeñas. */
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* --- Enlace de salto al contenido (accesibilidad de teclado) --- */
+/* --- Enlace de salto al contenido (Accesibilidad de Teclado) --- */
 .salto-contenido {
     position: absolute;
     top: var(--espacio-2);
     left: var(--espacio-2);
-    z-index: 100;
+    z-index: 1000;
     padding: var(--espacio-2) var(--espacio-4);
-    background-color: var(--color-primario);
-    color: var(--color-texto-inverso);
-    border-radius: var(--radio-sm);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    border-radius: var(--radio-md);
+    font-weight: 600;
+    font-size: var(--texto-sm);
     text-decoration: none;
+    box-shadow: var(--sombra-md);
     transform: translateY(-200%);
-    transition: transform var(--transicion);
+    transition: transform var(--transicion-rapida);
 }
 
-/* Se usa :focus (y no :focus-visible) para que el enlace aparezca ante
-   cualquier forma de enfoque, incluido el foco movido por software. */
 .salto-contenido:focus {
     transform: translateY(0);
 }
 
-/* --- Cabecera --- */
-.cabecera {
-    background-color: var(--color-superficie);
-    border-bottom: 1px solid var(--color-borde);
-    box-shadow: var(--sombra-1);
-    position: sticky;
-    top: 0;
-    z-index: 20;
-}
-
-.cabecera__barra {
-    max-width: var(--ancho-contenido);
-    margin-inline: auto;
-    padding: var(--espacio-4);
+/* ==========================================================================
+   1. PANTALLA DE ACCESO / LOGIN (SPLIT SCREEN)
+   ========================================================================== */
+.cuerpo-acceso {
+    background: radial-gradient(circle at 10% 20%, rgba(29, 78, 216, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                var(--color-background);
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+.acceso {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* --- Panel de Branding Visual --- */
+.acceso__branding {
+    background: linear-gradient(145deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%);
+    color: var(--color-text-inverse);
+    padding: var(--espacio-7) var(--espacio-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.acceso__branding::before {
+    content: "";
+    position: absolute;
+    top: -30%;
+    right: -20%;
+    width: 28rem;
+    height: 28rem;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%);
+    border-radius: var(--radio-completo);
+    pointer-events: none;
+}
+
+.branding__cabecera {
+    display: flex;
+    align-items: center;
     gap: var(--espacio-3);
+    z-index: 1;
+}
+
+.branding__logo {
+    width: 2.75rem;
+    height: 2.75rem;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.branding__nombre {
+    font-size: var(--texto-xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.branding__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+    margin-block: var(--espacio-6);
+    z-index: 1;
+    max-width: 36rem;
+}
+
+.branding__titulo {
+    font-size: var(--texto-3xl);
+    font-weight: 800;
+    line-height: var(--interlineado-apretado);
+    letter-spacing: -0.03em;
+    color: #ffffff;
+}
+
+.branding__descripcion {
+    font-size: var(--texto-md);
+    color: #cbd5e1;
+    line-height: var(--interlineado-amplio);
+}
+
+.branding__tarjeta-previa {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radio-xl);
+    padding: var(--espacio-5);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.branding__ilustracion {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radio-md);
+}
+
+.branding__ventajas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    font-size: var(--texto-sm);
+    color: #e2e8f0;
+}
+
+.branding__ventajas li {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-2);
+}
+
+.branding__icono-check {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #34d399;
+    flex-shrink: 0;
+}
+
+.branding__pie {
+    font-size: var(--texto-xs);
+    color: #94a3b8;
+    z-index: 1;
+}
+
+/* --- Panel de Formulario --- */
+.acceso__formulario-panel {
+    background-color: var(--color-surface);
+    padding: var(--espacio-6) var(--espacio-5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.acceso__tarjeta-form {
+    width: 100%;
+    max-width: 28rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+}
+
+.acceso__cabecera-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+}
+
+.acceso__titulo-form {
+    font-size: var(--texto-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+}
+
+.acceso__subtitulo-form {
+    font-size: var(--texto-sm);
+    color: var(--color-muted);
+}
+
+.acceso__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.acceso__pie-form {
+    text-align: center;
+    font-size: var(--texto-xs);
+    color: var(--color-muted);
+    margin-top: var(--espacio-4);
+}
+
+/* ==========================================================================
+   2. APP SHELL (SIDEBAR + HEADER + MAIN CONTENT)
+   ========================================================================== */
+.disposicion-aplicacion {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* --- Sidebar Lateral --- */
+.barra-lateral {
+    width: var(--ancho-sidebar);
+    background-color: var(--color-sidebar-bg);
+    border-right: 1px solid var(--color-sidebar-border);
+    color: var(--color-sidebar-text);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    transition: transform var(--transicion-normal);
+}
+
+.barra-lateral__cabecera {
+    padding: var(--espacio-5) var(--espacio-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--color-sidebar-border);
 }
 
 .marca {
     display: flex;
     align-items: center;
-    gap: var(--espacio-2);
-    font-size: var(--texto-lg);
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    gap: var(--espacio-3);
+    text-decoration: none;
+    color: var(--color-sidebar-text);
 }
 
 .marca__icono {
-    flex: 0 0 auto;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
 }
 
-.selector-usuario {
+.marca__texto {
+    font-size: var(--texto-lg);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.marca__badge {
+    font-size: var(--texto-xs);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radio-sm);
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    font-weight: 700;
+}
+
+.boton-cerrar-sidebar {
+    display: none;
+    color: var(--color-sidebar-muted);
+    padding: var(--espacio-1);
+    border-radius: var(--radio-sm);
+}
+
+.boton-cerrar-sidebar:hover {
+    color: #ffffff;
+    background-color: var(--color-sidebar-hover);
+}
+
+.barra-lateral__nav {
+    flex: 1 1 auto;
+    padding: var(--espacio-4) var(--espacio-3);
+    overflow-y: auto;
+}
+
+.menu-lateral {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
+    flex-direction: column;
+    gap: var(--espacio-1);
+}
+
+.menu-lateral__enlace {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    padding: var(--espacio-3) var(--espacio-3);
+    border-radius: var(--radio-lg);
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-sidebar-muted);
+    text-align: left;
+    transition: background-color var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.menu-lateral__enlace:hover {
+    background-color: var(--color-sidebar-hover);
+    color: #ffffff;
+}
+
+.menu-lateral__enlace[aria-current="page"] {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: var(--sombra-azul);
+}
+
+.menu-lateral__icono {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+.barra-lateral__pie {
+    padding: var(--espacio-4) var(--espacio-3);
+    border-top: 1px solid var(--color-sidebar-border);
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.perfil-usuario {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    padding: var(--espacio-2);
+}
+
+.perfil-usuario__avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radio-completo);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--texto-sm);
+    box-shadow: var(--sombra-sm);
+}
+
+.perfil-usuario__info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.perfil-usuario__nombre {
+    font-size: var(--texto-sm);
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.perfil-usuario__moneda {
+    font-size: var(--texto-xs);
+    color: #94a3b8;
+}
+
+/* --- Área de Trabajo Principal --- */
+.area-trabajo {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin-left: 0;
+    transition: margin-left var(--transicion-normal);
+}
+
+/* --- Header Superior --- */
+.cabecera-superior {
+    height: var(--altura-header);
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding-inline: var(--espacio-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: var(--sombra-xs);
+}
+
+.cabecera-superior__izquierda {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+}
+
+.boton-menu-movil {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radio-md);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+}
+
+.boton-menu-movil:hover {
+    background-color: var(--color-surface-hover);
+}
+
+.migas {
+    display: flex;
+    align-items: baseline;
     gap: var(--espacio-2);
 }
 
-.selector-usuario .campo {
-    flex: 1 1 8rem;
-    min-width: 7rem;
+.migas__raiz {
+    font-size: var(--texto-sm);
+    color: var(--color-muted);
+    font-weight: 500;
 }
 
-.selector-usuario .campo__ayuda {
-    flex: 1 1 100%;
+.migas__separador {
+    font-size: var(--texto-xs);
+    color: var(--color-muted);
 }
 
-/* --- Navegación principal --- */
-.navegacion {
-    border-top: 1px solid var(--color-borde);
-    background-color: var(--color-superficie-alt);
+.migas__actual {
+    font-size: var(--texto-lg);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
 }
 
-.navegacion__lista {
-    max-width: var(--ancho-contenido);
-    margin-inline: auto;
-    padding: var(--espacio-2) var(--espacio-3);
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--espacio-2);
+.cabecera-superior__derecha {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
 }
 
-/* --- Contenido principal --- */
+.badge-moneda {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-1);
+    padding: var(--espacio-1) var(--espacio-3);
+    border-radius: var(--radio-completo);
+    background-color: var(--color-primary-subtle);
+    color: var(--color-primary);
+    font-size: var(--texto-xs);
+    font-weight: 700;
+    border: 1px solid rgba(29, 78, 216, 0.15);
+}
+
+/* --- Contenido Principal --- */
 .contenido {
     flex: 1 1 auto;
     width: 100%;
-    max-width: var(--ancho-contenido);
+    max-width: var(--ancho-max-contenido);
     margin-inline: auto;
-    padding: var(--espacio-4);
+    padding: var(--espacio-5) var(--espacio-4);
 }
 
 .contenido:focus {
@@ -118,89 +491,98 @@ body {
 .vista {
     display: flex;
     flex-direction: column;
+    gap: var(--espacio-6);
+    animation: aparecerVista var(--transicion-normal) ease-out;
+}
+
+@keyframes aparecerVista {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vista__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: var(--espacio-4);
 }
 
-.vista > h2 {
+.vista__cabecera h2 {
     font-size: var(--texto-2xl);
+    font-weight: 800;
     letter-spacing: -0.02em;
+    color: var(--color-text);
 }
 
 .vista__introduccion {
-    /* Se pega al h2 anterior anulando el gap de la vista. */
-    margin-top: calc(var(--espacio-4) * -1);
-    color: var(--color-texto-suave);
     font-size: var(--texto-sm);
+    color: var(--color-muted);
     max-width: 60ch;
+    margin-top: var(--espacio-1);
 }
 
-/* --- Rejillas reutilizables --- */
-.rejilla-indicadores {
+/* --- Rejillas Estructurales --- */
+.rejilla-kpis {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--espacio-3);
+    gap: var(--espacio-4);
+}
+
+.rejilla-graficos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--espacio-5);
 }
 
 .rejilla-doble {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--espacio-4);
+    gap: var(--espacio-5);
     align-items: start;
 }
 
-/* --- Pie --- */
+/* --- Pie de Página --- */
 .pie {
-    margin-top: var(--espacio-6);
-    padding: var(--espacio-5) var(--espacio-4);
-    background-color: var(--color-superficie);
-    border-top: 1px solid var(--color-borde);
+    margin-top: auto;
+    padding: var(--espacio-6) var(--espacio-5);
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
     text-align: center;
 }
 
 .pie__texto {
     font-size: var(--texto-sm);
-    color: var(--color-texto-suave);
+    color: var(--color-text-subtle);
+    font-weight: 600;
 }
 
 .pie__texto--suave {
     font-size: var(--texto-xs);
+    color: var(--color-muted);
     margin-top: var(--espacio-1);
 }
 
-/* --- Pantalla de acceso ---------------------------------------------------
-   Es la primera pantalla de la aplicación y ocupa el alto disponible: el
-   panel solo aparece cuando el flujo de acceso ha fijado un usuario. */
-.acceso {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: var(--espacio-4);
-    width: 100%;
-    padding: var(--espacio-5) var(--espacio-4);
+/* --- Capa de Backdrop para Sidebar en Móvil --- */
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 45;
+    display: none;
+    opacity: 0;
+    transition: opacity var(--transicion-normal);
 }
 
-.acceso__pie {
-    max-width: 34rem;
-    text-align: center;
-    font-size: var(--texto-xs);
-    color: var(--color-texto-suave);
-}
-
-/* --- Barra de sesión de la cabecera --- */
-.sesion {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--espacio-3);
-}
-
-.sesion__usuario {
-    font-size: var(--texto-sm);
-    color: var(--color-texto-suave);
-}
-
-.sesion__usuario strong {
-    color: var(--color-texto);
+.sidebar-backdrop.activo {
+    display: block;
+    opacity: 1;
 }

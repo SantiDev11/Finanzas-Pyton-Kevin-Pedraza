@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Panel de finanzas personales: movimientos, categorías, resumen mensual y análisis predictivo.">
+    <meta name="description" content="Panel de control de finanzas personales: resumen mensual, gráficos interactivos, movimientos, categorías y analítica en pesos colombianos (COP).">
     <meta name="color-scheme" content="light dark">
-    <title>Panel — Finanzas Personales</title>
+    <title>Panel de Control — Finanzas Personales</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/variables.css">
@@ -18,449 +18,626 @@
 <body>
     <a class="salto-contenido" href="#contenido">Saltar al contenido principal</a>
 
-    <header class="cabecera" id="cabecera-aplicacion" hidden>
-        <div class="cabecera__barra">
-            <h1 class="marca">
-                <img class="marca__icono" src="assets/favicon.svg" alt="" width="28" height="28">
-                Finanzas Personales
-            </h1>
-
-            <div class="sesion">
-                <p class="sesion__usuario">
-                    Sesión iniciada:
-                    <strong id="sesion-usuario">—</strong>
-                </p>
-                <button type="button" class="boton boton--secundario" id="boton-cerrar-sesion">Cerrar sesión</button>
-            </div>
-        </div>
-
-        <nav class="navegacion" aria-label="Secciones de la aplicación">
-            <ul class="navegacion__lista">
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="panel"
-                        aria-current="page">Panel</button>
-                </li>
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="movimientos">Movimientos</button>
-                </li>
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="categorias">Categorías</button>
-                </li>
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="analisis">Análisis</button>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <main class="contenido" id="contenido" tabindex="-1" hidden>
+    <!-- Estructura principal de la aplicación -->
+    <div class="disposicion-aplicacion">
 
         <!-- ================================================================
-             VISTA: PANEL / DASHBOARD
+             1. SIDEBAR / NAVEGACIÓN LATERAL
              ================================================================ -->
-        <section class="vista" id="vista-panel" aria-labelledby="titulo-panel">
-            <h2 id="titulo-panel">Panel financiero</h2>
-            <p class="vista__introduccion">
-                Situación del periodo seleccionado. Todos los importes provienen directamente de la API.
-            </p>
+        <aside class="barra-lateral" id="barra-lateral" aria-label="Navegación lateral principal">
+            <header class="barra-lateral__cabecera">
+                <a href="#vista-panel" class="marca" id="enlace-marca-sidebar">
+                    <img class="marca__icono" src="assets/favicon.svg" alt="" width="32" height="32">
+                    <span class="marca__texto">Finanzas</span>
+                    <span class="marca__badge">COP</span>
+                </a>
+                <button type="button" class="boton-cerrar-sidebar" id="boton-cerrar-sidebar" aria-label="Cerrar barra lateral">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </header>
 
-            <section class="tarjeta" aria-labelledby="titulo-resumen">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-resumen">Resumen mensual</h3>
-                    <form class="formulario-linea" id="form-resumen" novalidate>
-                        <div class="campo campo--compacto">
-                            <label for="entrada-mes">Mes</label>
-                            <input type="month" id="entrada-mes" name="mes" required>
-                        </div>
-                        <button type="submit" class="boton boton--primario">Consultar</button>
-                    </form>
-                </div>
-
-                <p class="estado estado--cargando" id="estado-resumen" role="status" aria-live="polite">Cargando
-                    resumen…</p>
-
-                <ul class="rejilla-indicadores" id="indicadores-resumen" hidden>
+            <nav class="barra-lateral__nav" aria-label="Vistas disponibles">
+                <ul class="menu-lateral">
                     <li>
-                        <article class="indicador indicador--ingreso" aria-labelledby="titulo-ingresos">
-                            <h4 id="titulo-ingresos">Total ingresos</h4>
-                            <p class="indicador__valor" id="valor-ingresos">—</p>
-                            <p class="indicador__nota">Suma de movimientos de tipo ingreso.</p>
-                        </article>
+                        <button type="button" class="menu-lateral__enlace" data-vista="panel" aria-current="page">
+                            <svg class="menu-lateral__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span>Dashboard</span>
+                        </button>
                     </li>
                     <li>
-                        <article class="indicador indicador--gasto" aria-labelledby="titulo-gastos">
-                            <h4 id="titulo-gastos">Total gastos</h4>
-                            <p class="indicador__valor" id="valor-gastos">—</p>
-                            <p class="indicador__nota">Suma de movimientos de tipo gasto.</p>
-                        </article>
+                        <button type="button" class="menu-lateral__enlace" data-vista="movimientos">
+                            <svg class="menu-lateral__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <span>Movimientos</span>
+                        </button>
                     </li>
                     <li>
-                        <article class="indicador indicador--balance" aria-labelledby="titulo-balance">
-                            <h4 id="titulo-balance">Balance</h4>
-                            <p class="indicador__valor" id="valor-balance">—</p>
-                            <p class="indicador__nota">Ahorro del periodo calculado por el backend.</p>
-                        </article>
+                        <button type="button" class="menu-lateral__enlace" data-vista="categorias">
+                            <svg class="menu-lateral__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"></path>
+                            </svg>
+                            <span>Categorías</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="menu-lateral__enlace" data-vista="analisis">
+                            <svg class="menu-lateral__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                            <span>Análisis</span>
+                        </button>
                     </li>
                 </ul>
+            </nav>
 
-                <figure class="proporcion" id="proporcion-resumen" hidden>
-                    <figcaption>Proporción visual entre ingresos y gastos del periodo</figcaption>
-                    <div class="proporcion__barra">
-                        <span class="proporcion__parte proporcion__parte--ingreso" id="barra-ingresos"></span>
-                        <span class="proporcion__parte proporcion__parte--gasto" id="barra-gastos"></span>
+            <footer class="barra-lateral__pie">
+                <div class="perfil-usuario">
+                    <span class="perfil-usuario__avatar" id="avatar-usuario" aria-hidden="true">FP</span>
+                    <div class="perfil-usuario__info">
+                        <strong class="perfil-usuario__nombre" id="sesion-usuario-sidebar">Cargando…</strong>
+                        <span class="perfil-usuario__moneda">Usuario</span>
                     </div>
-                    <p class="proporcion__leyenda">
-                        <span class="punto punto--ingreso" aria-hidden="true"></span> Ingresos
-                        <span class="punto punto--gasto" aria-hidden="true"></span> Gastos
-                    </p>
-                </figure>
-            </section>
+                </div>
+            </footer>
+        </aside>
 
-            <div class="rejilla-doble">
-                <section class="tarjeta" aria-labelledby="titulo-ultimos">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-ultimos">Últimos movimientos</h3>
-                    </div>
-                    <p class="estado estado--cargando" id="estado-ultimos" role="status" aria-live="polite">Cargando
-                        movimientos…</p>
-                    <div class="tabla-desplazable">
-                        <table class="tabla tabla--apilable" id="tabla-ultimos" hidden>
-                            <caption class="tabla__titulo">Cinco movimientos más recientes del usuario activo</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Fecha</th>
-                                    <th scope="col">Categoría</th>
-                                    <th scope="col">Tipo</th>
-                                    <th scope="col" class="celda--numerica">Monto (COP)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cuerpo-ultimos"></tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <section class="tarjeta" aria-labelledby="titulo-prediccion-panel">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-prediccion-panel">Gasto estimado del próximo mes</h3>
-                    </div>
-                    <p class="estado estado--cargando" id="estado-prediccion-panel" role="status"
-                        aria-live="polite">Calculando predicción…</p>
-                    <article class="prediccion" id="prediccion-panel" hidden>
-                        <p class="prediccion__mes" id="panel-prediccion-mes">—</p>
-                        <p class="prediccion__valor" id="panel-prediccion-valor">—</p>
-                        <p class="prediccion__detalle" id="panel-prediccion-confianza">—</p>
-                    </article>
-                </section>
-            </div>
-        </section>
+        <!-- Fondo difuminado para sidebar móvil -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
 
         <!-- ================================================================
-             VISTA: MOVIMIENTOS
+             2. ÁREA DE TRABAJO PRINCIPAL
              ================================================================ -->
-        <section class="vista" id="vista-movimientos" aria-labelledby="titulo-movimientos" hidden>
-            <h2 id="titulo-movimientos">Movimientos</h2>
-            <p class="vista__introduccion">
-                Registro, consulta, edición y eliminación de ingresos y gastos.
-            </p>
+        <div class="area-trabajo">
 
-            <section class="tarjeta" aria-labelledby="titulo-filtros">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-filtros">Filtros de búsqueda</h3>
-                    <button type="button" class="boton boton--primario" id="boton-nuevo-movimiento">
-                        Nuevo movimiento
+            <!-- Cabecera Superior -->
+            <header class="cabecera-superior" id="cabecera-aplicacion" hidden>
+                <div class="cabecera-superior__izquierda">
+                    <button type="button" class="boton-menu-movil" id="boton-menu-movil" aria-label="Abrir menú de navegación lateral">
+                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="migas">
+                        <span class="migas__raiz">Panel</span>
+                        <span class="migas__separador">/</span>
+                        <h1 class="migas__actual" id="titulo-seccion-actual">Dashboard</h1>
+                    </div>
+                </div>
+
+                <div class="cabecera-superior__derecha">
+                    <span class="badge-moneda">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8M12 6v2m0 8v2"></path>
+                        </svg>
+                        <span>COP</span>
+                    </span>
+                    <button type="button" class="boton boton--secundario boton--pequeno" id="boton-cerrar-sesion">
+                        <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span>Cerrar sesión</span>
                     </button>
                 </div>
+            </header>
 
-                <form class="formulario formulario--filtros" id="form-filtros" novalidate>
-                    <fieldset>
-                        <legend>Acotar el listado de movimientos</legend>
-                        <div class="formulario__campos">
-                            <div class="campo">
-                                <label for="filtro-desde">Desde</label>
-                                <input type="date" id="filtro-desde" name="desde">
-                            </div>
-                            <div class="campo">
-                                <label for="filtro-hasta">Hasta</label>
-                                <input type="date" id="filtro-hasta" name="hasta">
-                            </div>
-                            <div class="campo">
-                                <label for="filtro-categoria">Categoría</label>
-                                <select id="filtro-categoria" name="categoria">
-                                    <option value="">Todas las categorías</option>
-                                </select>
-                            </div>
+            <!-- Contenido Principal -->
+            <main class="contenido" id="contenido" tabindex="-1" hidden>
+
+                <!-- ============================================================
+                     VISTA 1: DASHBOARD / PANEL PRINCIPAL
+                     ============================================================ -->
+                <section class="vista" id="vista-panel" aria-labelledby="titulo-panel">
+                    <header class="vista__cabecera">
+                        <div>
+                            <h2 id="titulo-panel">Resumen Financiero</h2>
+                            <p class="vista__introduccion">
+                                Situación del periodo seleccionado. Todos los importes provienen directamente de la API en pesos colombianos.
+                            </p>
                         </div>
-                        <p class="mensaje-error" id="error-filtros" role="alert" hidden></p>
-                        <div class="formulario__acciones">
-                            <button type="submit" class="boton boton--primario">Filtrar</button>
-                            <button type="reset" class="boton boton--secundario">Limpiar</button>
+
+                        <form class="formulario-linea" id="form-resumen" novalidate>
+                            <div class="campo campo--compacto">
+                                <label for="entrada-mes">Mes de consulta</label>
+                                <input type="month" id="entrada-mes" name="mes" required>
+                            </div>
+                            <button type="submit" class="boton boton--primario boton--pequeno">Consultar</button>
+                        </form>
+                    </header>
+
+                    <p class="estado estado--cargando" id="estado-resumen" role="status" aria-live="polite">Cargando resumen…</p>
+
+                    <!-- Rejilla de KPI Cards -->
+                    <section class="rejilla-kpis" id="indicadores-resumen" aria-label="Indicadores financieros principales" hidden>
+                        <!-- KPI 1: Ingresos -->
+                        <article class="kpi-tarjeta kpi-tarjeta--ingreso" aria-labelledby="titulo-ingresos">
+                            <header class="kpi-tarjeta__cabecera">
+                                <span class="kpi-tarjeta__titulo" id="titulo-ingresos">Total Ingresos</span>
+                                <span class="kpi-tarjeta__icono kpi-tarjeta__icono--ingreso" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                        <polyline points="17 6 23 6 23 12"></polyline>
+                                    </svg>
+                                </span>
+                            </header>
+                            <p class="kpi-tarjeta__valor" id="valor-ingresos">—</p>
+                            <footer class="kpi-tarjeta__pie">
+                                <span class="kpi-tarjeta__nota">Suma de ingresos del mes</span>
+                            </footer>
+                        </article>
+
+                        <!-- KPI 2: Gastos -->
+                        <article class="kpi-tarjeta kpi-tarjeta--gasto" aria-labelledby="titulo-gastos">
+                            <header class="kpi-tarjeta__cabecera">
+                                <span class="kpi-tarjeta__titulo" id="titulo-gastos">Total Gastos</span>
+                                <span class="kpi-tarjeta__icono kpi-tarjeta__icono--gasto" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                                        <polyline points="17 18 23 18 23 12"></polyline>
+                                    </svg>
+                                </span>
+                            </header>
+                            <p class="kpi-tarjeta__valor" id="valor-gastos">—</p>
+                            <footer class="kpi-tarjeta__pie">
+                                <span class="kpi-tarjeta__nota">Suma de gastos del mes</span>
+                            </footer>
+                        </article>
+
+                        <!-- KPI 3: Balance Neto -->
+                        <article class="kpi-tarjeta kpi-tarjeta--balance" id="tarjeta-balance" aria-labelledby="titulo-balance">
+                            <header class="kpi-tarjeta__cabecera">
+                                <span class="kpi-tarjeta__titulo" id="titulo-balance">Balance Neto</span>
+                                <span class="kpi-tarjeta__icono kpi-tarjeta__icono--balance" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                                    </svg>
+                                </span>
+                            </header>
+                            <p class="kpi-tarjeta__valor" id="valor-balance">—</p>
+                            <footer class="kpi-tarjeta__pie">
+                                <span class="kpi-tarjeta__nota">Ahorro neto calculado</span>
+                            </footer>
+                        </article>
+
+                        <!-- KPI 4: Predicción de Gastos -->
+                        <article class="kpi-tarjeta kpi-tarjeta--prediccion" aria-labelledby="titulo-prediccion-kpi">
+                            <header class="kpi-tarjeta__cabecera">
+                                <span class="kpi-tarjeta__titulo" id="titulo-prediccion-kpi">Predicción Gasto</span>
+                                <span class="kpi-tarjeta__icono kpi-tarjeta__icono--prediccion" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                    </svg>
+                                </span>
+                            </header>
+                            <p class="kpi-tarjeta__valor" id="panel-prediccion-valor">—</p>
+                            <footer class="kpi-tarjeta__pie">
+                                <span class="kpi-tarjeta__nota" id="panel-prediccion-mes">Próximo mes</span>
+                            </footer>
+                        </article>
+                    </section>
+
+                    <!-- Rejilla de Gráficos Interactivos (Chart.js) -->
+                    <section class="rejilla-graficos" aria-label="Gráficos analíticos">
+                        <!-- Gráfico 1: Gastos por Categoría -->
+                        <article class="tarjeta-grafico" aria-labelledby="titulo-grafico-categorias">
+                            <header class="tarjeta-grafico__cabecera">
+                                <div>
+                                    <h3 id="titulo-grafico-categorias">Gastos por Categoría</h3>
+                                    <p class="tarjeta-grafico__subtitulo">Distribución porcentual del periodo</p>
+                                </div>
+                            </header>
+                            <p class="estado estado--cargando" id="estado-grafico-categorias" role="status" aria-live="polite">Cargando gráfico…</p>
+                            <div class="grafico-contenedor" id="contenedor-grafico-categorias" hidden>
+                                <canvas id="canvas-grafico-categorias" aria-label="Gráfico de dona de gastos por categoría"></canvas>
+                            </div>
+                        </article>
+
+                        <!-- Gráfico 2: Tendencia Mensual Ingresos vs Gastos -->
+                        <article class="tarjeta-grafico" aria-labelledby="titulo-grafico-tendencia">
+                            <header class="tarjeta-grafico__cabecera">
+                                <div>
+                                    <h3 id="titulo-grafico-tendencia">Tendencia Mensual</h3>
+                                    <p class="tarjeta-grafico__subtitulo">Comparativa Ingresos vs Gastos (COP)</p>
+                                </div>
+                            </header>
+                            <p class="estado estado--cargando" id="estado-grafico-tendencia" role="status" aria-live="polite">Cargando tendencia…</p>
+                            <div class="grafico-contenedor" id="contenedor-grafico-tendencia" hidden>
+                                <canvas id="canvas-grafico-tendencia" aria-label="Gráfico de barras de ingresos y gastos mensuales"></canvas>
+                            </div>
+                        </article>
+                    </section>
+
+                    <!-- Últimos Movimientos -->
+                    <section class="tarjeta" aria-labelledby="titulo-ultimos">
+                        <header class="tarjeta__cabecera">
+                            <div>
+                                <h3 id="titulo-ultimos">Últimos Movimientos</h3>
+                                <p class="tarjeta__subtitulo">Cinco transacciones más recientes</p>
+                            </div>
+                            <button type="button" class="boton boton--secundario boton--pequeno" id="boton-ver-todos-movimientos">
+                                Ver todos los movimientos
+                            </button>
+                        </header>
+
+                        <p class="estado estado--cargando" id="estado-ultimos" role="status" aria-live="polite">Cargando movimientos…</p>
+
+                        <div class="tabla-desplazable">
+                            <table class="tabla tabla--apilable" id="tabla-ultimos" hidden>
+                                <caption class="tabla__titulo">Cinco movimientos más recientes del usuario activo</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Fecha</th>
+                                        <th scope="col">Categoría</th>
+                                        <th scope="col">Tipo</th>
+                                        <th scope="col" class="celda--numerica">Monto (COP)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpo-ultimos"></tbody>
+                            </table>
                         </div>
-                    </fieldset>
-                </form>
-            </section>
-
-            <section class="tarjeta" aria-labelledby="titulo-listado">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-listado">Listado de movimientos</h3>
-                    <p class="contador" id="contador-movimientos"></p>
-                </div>
-
-                <p class="estado estado--cargando" id="estado-movimientos" role="status" aria-live="polite">Cargando
-                    movimientos…</p>
-
-                <div class="tabla-desplazable">
-                    <table class="tabla tabla--apilable" id="tabla-movimientos" hidden>
-                        <caption class="tabla__titulo">Movimientos del usuario activo ordenados por fecha
-                            descendente</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Fecha</th>
-                                <th scope="col">Categoría</th>
-                                <th scope="col">Tipo</th>
-                                <th scope="col" class="celda--numerica">Monto (COP)</th>
-                                <th scope="col">Descripción</th>
-                                <th scope="col">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpo-movimientos"></tbody>
-                    </table>
-                </div>
-            </section>
-        </section>
-
-        <!-- ================================================================
-             VISTA: CATEGORÍAS
-             ================================================================ -->
-        <section class="vista" id="vista-categorias" aria-labelledby="titulo-categorias" hidden>
-            <h2 id="titulo-categorias">Categorías</h2>
-            <p class="vista__introduccion">
-                Clasificación de los movimientos del usuario activo.
-            </p>
-
-            <div class="rejilla-doble">
-                <section class="tarjeta" aria-labelledby="titulo-nueva-categoria">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-nueva-categoria">Nueva categoría</h3>
-                    </div>
-
-                    <form class="formulario" id="form-categoria" novalidate>
-                        <fieldset>
-                            <legend>Datos de la categoría</legend>
-                            <div class="formulario__campos">
-                                <div class="campo">
-                                    <label for="categoria-nombre">Nombre</label>
-                                    <input type="text" id="categoria-nombre" name="nombre" minlength="2" maxlength="60"
-                                        required autocomplete="off" placeholder="Alimentación">
-                                </div>
-                                <div class="campo">
-                                    <label for="categoria-tipo">Tipo</label>
-                                    <select id="categoria-tipo" name="tipo" required>
-                                        <option value="gasto">Gasto</option>
-                                        <option value="ingreso">Ingreso</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="mensaje-error" id="error-categoria" role="alert" hidden></p>
-                            <div class="formulario__acciones">
-                                <button type="submit" class="boton boton--primario">Crear categoría</button>
-                            </div>
-                        </fieldset>
-                    </form>
-
-                    <aside class="nota" aria-label="Nota sobre las operaciones disponibles">
-                        <h4>Operaciones disponibles</h4>
-                        <p>
-                            La API expone únicamente creación y consulta de categorías
-                            (<code>POST /api/categorias</code> y <code>GET /api/categorias</code>).
-                            No existen endpoints de edición ni eliminación, por lo que esas acciones
-                            no se ofrecen en la interfaz.
-                        </p>
-                    </aside>
+                    </section>
                 </section>
 
-                <section class="tarjeta" aria-labelledby="titulo-listado-categorias">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-listado-categorias">Categorías registradas</h3>
-                        <p class="contador" id="contador-categorias"></p>
-                    </div>
+                <!-- ============================================================
+                     VISTA 2: MOVIMIENTOS
+                     ============================================================ -->
+                <section class="vista" id="vista-movimientos" aria-labelledby="titulo-movimientos" hidden>
+                    <header class="vista__cabecera">
+                        <div>
+                            <h2 id="titulo-movimientos">Movimientos Financieros</h2>
+                            <p class="vista__introduccion">
+                                Registro, consulta, edición, filtrado y eliminación de ingresos y gastos en pesos colombianos.
+                            </p>
+                        </div>
+                        <button type="button" class="boton boton--primario" id="boton-nuevo-movimiento">
+                            <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Nuevo movimiento</span>
+                        </button>
+                    </header>
 
-                    <p class="estado estado--cargando" id="estado-categorias" role="status" aria-live="polite">Cargando
-                        categorías…</p>
+                    <!-- Filtros de búsqueda -->
+                    <section class="tarjeta" aria-labelledby="titulo-filtros">
+                        <header class="tarjeta__cabecera">
+                            <h3 id="titulo-filtros">Filtros de Búsqueda</h3>
+                        </header>
 
-                    <div class="tabla-desplazable">
-                        <table class="tabla tabla--apilable" id="tabla-categorias" hidden>
-                            <caption class="tabla__titulo">Categorías asociadas al usuario activo</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col" class="celda--numerica">ID</th>
-                                    <th scope="col">Nombre</th>
-                                    <th scope="col">Tipo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cuerpo-categorias"></tbody>
-                        </table>
+                        <form class="formulario formulario--filtros" id="form-filtros" novalidate>
+                            <fieldset>
+                                <legend class="visualmente-oculto">Criterios de filtrado</legend>
+                                <div class="formulario__campos">
+                                    <div class="campo">
+                                        <label for="filtro-desde">Fecha inicial</label>
+                                        <input type="date" id="filtro-desde" name="desde">
+                                    </div>
+                                    <div class="campo">
+                                        <label for="filtro-hasta">Fecha final</label>
+                                        <input type="date" id="filtro-hasta" name="hasta">
+                                    </div>
+                                    <div class="campo">
+                                        <label for="filtro-categoria">Categoría</label>
+                                        <select id="filtro-categoria" name="categoria">
+                                            <option value="">Todas las categorías</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p class="mensaje-error" id="error-filtros" role="alert" hidden></p>
+                                <div class="formulario__acciones">
+                                    <button type="submit" class="boton boton--primario boton--pequeno">Aplicar filtros</button>
+                                    <button type="reset" class="boton boton--secundario boton--pequeno">Restablecer</button>
+                                </div>
+                            </fieldset>
+                        </form>
+                    </section>
+
+                    <!-- Listado de Movimientos -->
+                    <section class="tarjeta" aria-labelledby="titulo-listado">
+                        <header class="tarjeta__cabecera">
+                            <div>
+                                <h3 id="titulo-listado">Historial de Transacciones</h3>
+                                <p class="tarjeta__subtitulo">Ordenado cronológicamente por fecha descendente</p>
+                            </div>
+                            <p class="contador" id="contador-movimientos"></p>
+                        </header>
+
+                        <p class="estado estado--cargando" id="estado-movimientos" role="status" aria-live="polite">Cargando movimientos…</p>
+
+                        <div class="tabla-desplazable">
+                            <table class="tabla tabla--apilable" id="tabla-movimientos" hidden>
+                                <caption class="tabla__titulo">Movimientos registrados para el usuario activo</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Fecha</th>
+                                        <th scope="col">Categoría</th>
+                                        <th scope="col">Tipo</th>
+                                        <th scope="col" class="celda--numerica">Monto (COP)</th>
+                                        <th scope="col">Descripción</th>
+                                        <th scope="col">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpo-movimientos"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- ============================================================
+                     VISTA 3: CATEGORÍAS
+                     ============================================================ -->
+                <section class="vista" id="vista-categorias" aria-labelledby="titulo-categorias" hidden>
+                    <header class="vista__cabecera">
+                        <div>
+                            <h2 id="titulo-categorias">Gestión de Categorías</h2>
+                            <p class="vista__introduccion">
+                                Clasificación personalizada para ingresos y gastos del usuario activo.
+                            </p>
+                        </div>
+                    </header>
+
+                    <div class="rejilla-doble">
+                        <!-- Formulario de Creación -->
+                        <section class="tarjeta" aria-labelledby="titulo-nueva-categoria">
+                            <header class="tarjeta__cabecera">
+                                <h3 id="titulo-nueva-categoria">Nueva Categoría</h3>
+                            </header>
+
+                            <form class="formulario" id="form-categoria" novalidate>
+                                <fieldset>
+                                    <legend class="visualmente-oculto">Datos de la categoría</legend>
+                                    <div class="formulario__campos">
+                                        <div class="campo">
+                                            <label for="categoria-nombre">Nombre de la categoría</label>
+                                            <input type="text" id="categoria-nombre" name="nombre" minlength="2" maxlength="60"
+                                                required autocomplete="off" placeholder="Ej: Alimentación, Transporte, Salario">
+                                        </div>
+                                        <div class="campo">
+                                            <label for="categoria-tipo">Tipo de flujo</label>
+                                            <select id="categoria-tipo" name="tipo" required>
+                                                <option value="gasto">Gasto (Egreso)</option>
+                                                <option value="ingreso">Ingreso</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <p class="mensaje-error" id="error-categoria" role="alert" hidden></p>
+                                    <div class="formulario__acciones">
+                                        <button type="submit" class="boton boton--primario">Crear categoría</button>
+                                    </div>
+                                </fieldset>
+                            </form>
+
+                            <aside class="nota nota--info" aria-label="Información sobre operaciones">
+                                <h4>Disponibilidad de operaciones</h4>
+                                <p>
+                                    La API expone creación y consulta de categorías (<code>POST /api/categorias</code> y <code>GET /api/categorias</code>).
+                                </p>
+                            </aside>
+                        </section>
+
+                        <!-- Listado de Categorías -->
+                        <section class="tarjeta" aria-labelledby="titulo-listado-categorias">
+                            <header class="tarjeta__cabecera">
+                                <div>
+                                    <h3 id="titulo-listado-categorias">Categorías Registradas</h3>
+                                    <p class="tarjeta__subtitulo">Catálogo activo del usuario</p>
+                                </div>
+                                <p class="contador" id="contador-categorias"></p>
+                            </header>
+
+                            <p class="estado estado--cargando" id="estado-categorias" role="status" aria-live="polite">Cargando categorías…</p>
+
+                            <div class="tabla-desplazable">
+                                <table class="tabla tabla--apilable" id="tabla-categorias" hidden>
+                                    <caption class="tabla__titulo">Categorías asociadas al usuario actual</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="celda--numerica">ID</th>
+                                            <th scope="col">Nombre</th>
+                                            <th scope="col">Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpo-categorias"></tbody>
+                                </table>
+                            </div>
+                        </section>
                     </div>
                 </section>
-            </div>
-        </section>
 
-        <!-- ================================================================
-             VISTA: ANÁLISIS
-             ================================================================ -->
-        <section class="vista" id="vista-analisis" aria-labelledby="titulo-analisis" hidden>
-            <h2 id="titulo-analisis">Análisis</h2>
-            <p class="vista__introduccion">
-                Resultados del módulo analítico del backend: predicción de gastos y detección de anomalías.
-            </p>
+                <!-- ============================================================
+                     VISTA 4: ANÁLISIS PREDICTIVO Y ANOMALÍAS
+                     ============================================================ -->
+                <section class="vista" id="vista-analisis" aria-labelledby="titulo-analisis" hidden>
+                    <header class="vista__cabecera">
+                        <div>
+                            <h2 id="titulo-analisis">Módulo Analítico e Inteligencia Financiera</h2>
+                            <p class="vista__introduccion">
+                                Modelos estadísticos y de Machine Learning ejecutados en backend (Regresión Lineal Scikit-Learn y Detección de Anomalías Z-Score).
+                            </p>
+                        </div>
+                        <button type="button" class="boton boton--secundario boton--pequeno" id="boton-recargar-analisis">
+                            <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M23 4v6h-6"></path>
+                                <path d="M1 20v-6h6"></path>
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path>
+                            </svg>
+                            <span>Actualizar análisis</span>
+                        </button>
+                    </header>
 
-            <section class="tarjeta" aria-labelledby="titulo-prediccion">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-prediccion">Predicción de gastos</h3>
-                    <button type="button" class="boton boton--secundario" id="boton-recargar-analisis">Actualizar</button>
-                </div>
+                    <!-- Predicción de Gastos -->
+                    <section class="tarjeta" aria-labelledby="titulo-prediccion">
+                        <header class="tarjeta__cabecera">
+                            <div>
+                                <h3 id="titulo-prediccion">Predicción de Gasto del Próximo Mes</h3>
+                                <p class="tarjeta__subtitulo">Estimación generada mediante regresión lineal sobre series temporales</p>
+                            </div>
+                        </header>
 
-                <p class="estado estado--cargando" id="estado-prediccion" role="status" aria-live="polite">Calculando
-                    predicción…</p>
+                        <p class="estado estado--cargando" id="estado-prediccion" role="status" aria-live="polite">Calculando predicción…</p>
 
-                <article class="prediccion" id="detalle-prediccion" hidden>
-                    <h4 class="prediccion__mes" id="prediccion-mes">—</h4>
-                    <p class="prediccion__valor" id="prediccion-valor">—</p>
-                    <dl class="lista-datos">
-                        <dt>Confianza</dt>
-                        <dd id="prediccion-confianza">—</dd>
-                        <dt>Meses procesados</dt>
-                        <dd id="prediccion-meses">—</dd>
-                        <dt>Método</dt>
-                        <dd id="prediccion-razon">—</dd>
-                    </dl>
-                </article>
-            </section>
+                        <article class="prediccion" id="detalle-prediccion" hidden>
+                            <h4 class="prediccion__mes" id="prediccion-mes">—</h4>
+                            <p class="prediccion__valor" id="prediccion-valor">—</p>
+                            <dl class="lista-datos">
+                                <dt>Nivel de confianza</dt>
+                                <dd id="prediccion-confianza">—</dd>
+                                <dt>Meses de historial procesados</dt>
+                                <dd id="prediccion-meses">—</dd>
+                                <dt>Método estadístico</dt>
+                                <dd id="prediccion-razon">—</dd>
+                            </dl>
+                        </article>
+                    </section>
 
-            <section class="tarjeta" aria-labelledby="titulo-anomalias">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-anomalias">Anomalías detectadas</h3>
-                    <p class="contador" id="contador-anomalias"></p>
-                </div>
+                    <!-- Detección de Anomalías -->
+                    <section class="tarjeta" aria-labelledby="titulo-anomalias">
+                        <header class="tarjeta__cabecera">
+                            <div>
+                                <h3 id="titulo-anomalias">Anomalías Detectadas en Gastos</h3>
+                                <p class="tarjeta__subtitulo">Gastos atípicos que superan el umbral |Z-Score| &gt; 1.5</p>
+                            </div>
+                            <p class="contador" id="contador-anomalias"></p>
+                        </header>
 
-                <p class="estado estado--cargando" id="estado-anomalias" role="status" aria-live="polite">Analizando
-                    gastos…</p>
+                        <p class="estado estado--cargando" id="estado-anomalias" role="status" aria-live="polite">Analizando patrones de gasto…</p>
 
-                <div class="tabla-desplazable">
-                    <table class="tabla tabla--apilable" id="tabla-anomalias" hidden>
-                        <caption class="tabla__titulo">Gastos atípicos según Z-Score por categoría</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Fecha</th>
-                                <th scope="col" class="celda--numerica">Monto (COP)</th>
-                                <th scope="col">Categoría</th>
-                                <th scope="col" class="celda--numerica">Z-Score</th>
-                                <th scope="col">Descripción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpo-anomalias"></tbody>
-                    </table>
-                </div>
+                        <div class="tabla-desplazable">
+                            <table class="tabla tabla--apilable" id="tabla-anomalias" hidden>
+                                <caption class="tabla__titulo">Gastos clasificados como anomalías estadísticas</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Fecha</th>
+                                        <th scope="col" class="celda--numerica">Monto (COP)</th>
+                                        <th scope="col">Categoría</th>
+                                        <th scope="col" class="celda--numerica">Z-Score</th>
+                                        <th scope="col">Descripción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpo-anomalias"></tbody>
+                            </table>
+                        </div>
 
-                <aside class="nota" aria-label="Nota metodológica">
-                    <h4>Metodología</h4>
-                    <p>
-                        El backend calcula el Z-Score de cada gasto respecto a la media y la desviación
-                        estándar de su propia categoría. Se marca como anomalía todo gasto cuyo
-                        <abbr title="valor absoluto del Z-Score">|Z-Score|</abbr> supera el umbral indicado por la API.
-                    </p>
-                </aside>
-            </section>
-        </section>
-    </main>
+                        <aside class="nota nota--aviso" aria-label="Metodología de detección">
+                            <h4>Metodología Z-Score</h4>
+                            <p>
+                                El backend calcula la media y la desviación estándar de cada categoría de gasto. Todo movimiento que se desvíe más de 1.5 desviaciones típicas es clasificado como anomalía.
+                            </p>
+                        </aside>
+                    </section>
+                </section>
 
-    <footer class="pie" id="pie-aplicacion" hidden>
-        <p class="pie__texto">
-            Aplicación de Finanzas Personales — Arquitectura por capas (FastAPI + MySQL).
-        </p>
-        <p class="pie__texto pie__texto--suave">
-            Los importes, la predicción y las anomalías se calculan íntegramente en el backend.
-        </p>
-    </footer>
+            </main>
+
+            <!-- Pie de Aplicación -->
+            <footer class="pie" id="pie-aplicacion" hidden>
+                <p class="pie__texto">
+                    Finanzas Personales — Arquitectura por capas (FastAPI + MySQL).
+                </p>
+                <p class="pie__texto pie__texto--suave">
+                    Todos los importes se procesan en Pesos Colombianos (COP). Predicciones y anomalías calculadas en el backend.
+                </p>
+            </footer>
+        </div>
+    </div>
 
     <!-- ====================================================================
-         DIÁLOGO: ALTA Y EDICIÓN DE MOVIMIENTO
+         DIÁLOGO MODAL: CREAR / EDITAR MOVIMIENTO
          ==================================================================== -->
     <dialog class="dialogo" id="dialogo-movimiento" aria-labelledby="titulo-dialogo-movimiento">
         <form class="formulario" id="form-movimiento" novalidate>
             <header class="dialogo__cabecera">
                 <h2 id="titulo-dialogo-movimiento">Nuevo movimiento</h2>
-                <button type="button" class="boton boton--icono" id="boton-cerrar-movimiento"
-                    aria-label="Cerrar formulario">
+                <button type="button" class="boton boton--icono" id="boton-cerrar-movimiento" aria-label="Cerrar ventana modal">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </header>
 
             <fieldset>
-                <legend>Datos del movimiento</legend>
+                <legend class="visualmente-oculto">Datos del movimiento financiero</legend>
                 <div class="formulario__campos">
                     <div class="campo">
-                        <label for="movimiento-tipo">Tipo</label>
+                        <label for="movimiento-tipo">Tipo de movimiento</label>
                         <select id="movimiento-tipo" name="tipo" required>
-                            <option value="gasto">Gasto</option>
+                            <option value="gasto">Gasto (Egreso)</option>
                             <option value="ingreso">Ingreso</option>
                         </select>
                     </div>
+
                     <div class="campo">
                         <label for="movimiento-categoria">Categoría</label>
-                        <select id="movimiento-categoria" name="id_categoria" required
-                            aria-describedby="ayuda-categoria"></select>
-                        <p class="campo__ayuda" id="ayuda-categoria">Solo se listan las categorías del tipo
-                            seleccionado.</p>
+                        <select id="movimiento-categoria" name="id_categoria" required aria-describedby="ayuda-categoria"></select>
+                        <p class="campo__ayuda" id="ayuda-categoria">Solo se muestran categorías del tipo seleccionado.</p>
                     </div>
+
                     <div class="campo">
                         <label for="movimiento-monto">Monto (COP)</label>
                         <input type="number" id="movimiento-monto" name="monto" min="0.01" step="0.01" required
                             inputmode="decimal" placeholder="0.00" aria-describedby="ayuda-monto">
-                        <p class="campo__ayuda" id="ayuda-monto">Importe en pesos colombianos, sin separadores
-                            de miles.</p>
+                        <p class="campo__ayuda" id="ayuda-monto">Importe en pesos colombianos.</p>
                     </div>
+
                     <div class="campo">
-                        <label for="movimiento-fecha">Fecha</label>
+                        <label for="movimiento-fecha">Fecha de transacción</label>
                         <input type="date" id="movimiento-fecha" name="fecha" required>
                     </div>
+
                     <div class="campo campo--ancho-completo">
-                        <label for="movimiento-descripcion">Descripción <span
-                                class="campo__opcional">(opcional)</span></label>
+                        <label for="movimiento-descripcion">Descripción <span class="campo__opcional">(opcional)</span></label>
                         <textarea id="movimiento-descripcion" name="descripcion" rows="2" maxlength="255"
-                            placeholder="Mercado quincenal"></textarea>
+                            placeholder="Ej: Mercado quincenal, pago de nómina, servicios"></textarea>
                     </div>
                 </div>
 
                 <p class="mensaje-error" id="error-movimiento" role="alert" hidden></p>
 
                 <div class="formulario__acciones formulario__acciones--dialogo">
-                    <button type="button" class="boton boton--secundario"
-                        id="boton-cancelar-movimiento">Cancelar</button>
-                    <button type="submit" class="boton boton--primario" id="boton-guardar-movimiento">Guardar</button>
+                    <button type="button" class="boton boton--secundario" id="boton-cancelar-movimiento">Cancelar</button>
+                    <button type="submit" class="boton boton--primario" id="boton-guardar-movimiento">Guardar movimiento</button>
                 </div>
             </fieldset>
         </form>
     </dialog>
 
     <!-- ====================================================================
-         DIÁLOGO: CONFIRMACIÓN DE ELIMINACIÓN
+         DIÁLOGO MODAL: CONFIRMAR ELIMINACIÓN
          ==================================================================== -->
     <dialog class="dialogo dialogo--estrecho" id="dialogo-confirmar" aria-labelledby="titulo-dialogo-confirmar">
         <div class="dialogo__contenido">
             <header class="dialogo__cabecera">
                 <h2 id="titulo-dialogo-confirmar">Eliminar movimiento</h2>
             </header>
-            <p id="texto-confirmar">¿Deseas eliminar este movimiento de forma permanente?</p>
+            <p id="texto-confirmar">¿Deseas eliminar este movimiento permanentemente?</p>
             <div class="formulario__acciones formulario__acciones--dialogo">
                 <button type="button" class="boton boton--secundario" id="boton-cancelar-eliminar">Cancelar</button>
-                <button type="button" class="boton boton--peligro" id="boton-confirmar-eliminar">Eliminar</button>
+                <button type="button" class="boton boton--peligro" id="boton-confirmar-eliminar">Eliminar definitivamente</button>
             </div>
         </div>
     </dialog>
 
-    <!-- Región de notificaciones efímeras (contenedor sin valor semántico) -->
+    <!-- Contenedor de notificaciones efímeras -->
     <div class="notificaciones" id="notificaciones" role="status" aria-live="polite"></div>
 
+    <!-- Chart.js para gráficos interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <!-- Módulos de la Aplicación -->
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
