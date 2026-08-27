@@ -2,8 +2,8 @@
  * analytics.js — Módulo analítico (predicción y anomalías).
  *
  * Endpoints utilizados:
- *   GET /api/analitica/prediccion?id_usuario=
- *   GET /api/analitica/anomalias?id_usuario=
+ *   GET /api/analitica/prediccion
+ *   GET /api/analitica/anomalias
  *
  * Todo lo que se muestra procede del backend: aquí no se estima, no se
  * extrapola y no se calcula ningún Z-Score en el cliente.
@@ -63,13 +63,13 @@
        PREDICCIÓN — KPI CARD DEL PANEL
        ====================================================================== */
 
-    async function cargarPrediccionPanel(idUsuario) {
+    async function cargarPrediccionPanel() {
         if (nodos.panelValor) {
             nodos.panelValor.textContent = "…";
         }
 
         try {
-            var prediccion = await Api.analitica.prediccion(idUsuario);
+            var prediccion = await Api.analitica.prediccion();
 
             if (!tieneDatosSuficientes(prediccion)) {
                 if (nodos.panelValor) nodos.panelValor.textContent = "—";
@@ -93,14 +93,14 @@
        PREDICCIÓN — VISTA DE ANÁLISIS
        ====================================================================== */
 
-    async function cargarPrediccion(idUsuario) {
+    async function cargarPrediccion() {
         UI.mostrarEstado(nodos.estadoPrediccion, "cargando", "Calculando predicción con regresión lineal…");
         if (nodos.detalle) {
             nodos.detalle.hidden = true;
         }
 
         try {
-            var prediccion = await Api.analitica.prediccion(idUsuario);
+            var prediccion = await Api.analitica.prediccion();
 
             if (!tieneDatosSuficientes(prediccion)) {
                 UI.mostrarEstado(nodos.estadoPrediccion, "vacio", MENSAJE_SIN_HISTORICO);
@@ -126,7 +126,7 @@
        ANOMALÍAS
        ====================================================================== */
 
-    async function cargarAnomalias(idUsuario) {
+    async function cargarAnomalias() {
         UI.mostrarEstado(nodos.estadoAnomalias, "cargando", "Analizando anomalías estadísticas con Z-Score…");
         if (nodos.tablaAnomalias) {
             nodos.tablaAnomalias.hidden = true;
@@ -136,7 +136,7 @@
         }
 
         try {
-            var resultado = await Api.analitica.anomalias(idUsuario);
+            var resultado = await Api.analitica.anomalias();
             renderizarAnomalias(resultado);
         } catch (error) {
             UI.mostrarEstado(nodos.estadoAnomalias, "error", UI.mensajeDeExcepcion(error));
@@ -192,10 +192,10 @@
 
     /* ====================================================================== */
 
-    function cargar(idUsuario) {
+    function cargar() {
         return Promise.all([
-            cargarPrediccion(idUsuario),
-            cargarAnomalias(idUsuario)
+            cargarPrediccion(),
+            cargarAnomalias()
         ]);
     }
 
@@ -203,7 +203,7 @@
         capturarNodos();
         if (nodos.botonRecargar) {
             nodos.botonRecargar.addEventListener("click", function () {
-                cargar(App.usuarioActivo());
+                cargar();
             });
         }
     }

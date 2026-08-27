@@ -19,29 +19,33 @@ class CategoriaService:
         self._categoria_repo = categoria_repository or CategoriaRepository()
         self._usuario_repo = usuario_repository or UsuarioRepository()
 
-    def crear_categoria(self, data: CategoriaCreate) -> CategoriaResponse:
+    def crear_categoria(self, data: CategoriaCreate, id_usuario: int) -> CategoriaResponse:
         """
-        Crea una categoría verificando la existencia previa del usuario y la no duplicidad.
+        Crea una categoría para el usuario autenticado, comprobando la no duplicidad.
+
+        `id_usuario` procede siempre del token de acceso, no del cuerpo de la
+        petición: es la única forma de garantizar que nadie crea categorías en
+        la cuenta de otra persona.
         """
         # Validar que el usuario exista
-        if not self._usuario_repo.exists_by_id(data.id_usuario):
-            raise EntityNotFoundException(f"No se puede crear la categoría: El usuario con ID {data.id_usuario} no existe.")
+        if not self._usuario_repo.exists_by_id(id_usuario):
+            raise EntityNotFoundException(f"No se puede crear la categoría: El usuario con ID {id_usuario} no existe.")
 
         # Validar tipo válido
         if data.tipo not in ("ingreso", "gasto"):
             raise ValidationException("El tipo de categoría debe ser exclusivamente 'ingreso' o 'gasto'.")
 
         # Validar unicidad (id_usuario, tipo, nombre)
-        if self._categoria_repo.exists_by_user_type_name(data.id_usuario, data.tipo, data.nombre):
+        if self._categoria_repo.exists_by_user_type_name(id_usuario, data.tipo, data.nombre):
             raise DuplicateEntityException(
-                f"Ya existe una categoría '{data.nombre}' de tipo '{data.tipo}' para el usuario {data.id_usuario}."
+                f"Ya existe una categoría '{data.nombre}' de tipo '{data.tipo}' en tu cuenta."
             )
 
         # Persistir
         nueva = self._categoria_repo.create(
             nombre=data.nombre,
             tipo=data.tipo,
-            id_usuario=data.id_usuario
+            id_usuario=id_usuario
         )
 
         return CategoriaResponse(

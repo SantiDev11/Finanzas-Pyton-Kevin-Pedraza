@@ -1,18 +1,30 @@
 /**
- * sesion.js — Sesión compartida por las dos páginas del frontend.
+ * sesion.js — Sesión autenticada compartida por las dos páginas del frontend.
  *
- * index.html (acceso) la escribe; dashboard.html (panel) la exige. Es el único
- * módulo que conoce dónde se guarda la sesión y cómo se navega entre páginas.
+ * index.html (acceso) la crea con el token que devuelve el login;
+ * dashboard.html (panel) la exige. Es el único módulo que sabe dónde se guarda
+ * la sesión y cómo se navega entre páginas.
  *
- * LIMITACIÓN DEL BACKEND ACTUAL
- * -----------------------------
- * La API expone un único endpoint de usuarios, POST /api/usuarios (registro).
- * No existe ninguna ruta de inicio de sesión ni de verificación de
- * credenciales, así que el frontend NO puede comprobar correo y contraseña:
- * eso exigiría añadir un endpoint al backend, que está aprobado y no se
- * modifica. Lo que sí se valida contra MySQL es que el usuario exista.
+ * DÓNDE SE GUARDA EL TOKEN, Y POR QUÉ
+ * -----------------------------------
+ * El token se guarda en `sessionStorage`. La alternativa a prueba de XSS sería
+ * una cookie `httpOnly`, que el JavaScript no puede leer; se ha descartado
+ * porque el frontend y la API son dos servicios en orígenes distintos, y una
+ * cookie entre orígenes exigiría `SameSite=None; Secure` más protección CSRF
+ * propia. Es un cambio de arquitectura que excede esta fase.
  *
- * No se implementa JWT, OAuth ni ningún esquema de tokens.
+ * A cambio se aplican las mitigaciones que sí caben aquí:
+ *
+ *   - `sessionStorage` y no `localStorage`: el token muere al cerrar la
+ *     pestaña, en lugar de quedarse en el disco indefinidamente;
+ *   - el token nunca se escribe en consola ni se muestra en la interfaz;
+ *   - el token nunca viaja en la URL, solo en la cabecera `Authorization`;
+ *   - todo el renderizado del proyecto usa `textContent`, nunca `innerHTML`,
+ *     que es lo que de verdad cierra la puerta al XSS que podría leerlo;
+ *   - los tokens caducan (ACCESS_TOKEN_EXPIRE_MINUTES en el backend), así que
+ *     uno robado tiene una ventana de uso limitada.
+ *
+ * Queda documentado como riesgo residual conocido en el README.
  */
 (function (App) {
     "use strict";
@@ -25,30 +37,71 @@
     var PAGINA_PANEL = "dashboard.html";
 
     /**
-     * Identificador del usuario con sesión iniciada, o null.
+     * Lee la sesión guardada: { token, usuario } o null.
      *
-     * Se usa sessionStorage y no localStorage para que la sesión muera al
-     * cerrar la pestaña. Solo se guarda el identificador: nunca el correo, la
-     * contraseña ni ningún hash.
+     * Cualquier contenido corrupto se trata como ausencia de sesión.
      */
     function obtener() {
         try {
-            var valor = Number(window.sessionStorage.getItem(CONFIG.CLAVE_SESION));
-            return Number.isInteger(valor) && valor > 0 ? valor : null;
+            var crudo = window.sessionStorage.getItem(CONFIG.CLAVE_SESION);
+            if (!crudo) {
+                return null;
+            }
+            var datos = JSON.parse(crudo);
+            if (!datos || typeof datos.token !== "string" || !datos.token) {
+                return null;
+            }
+            if (!datos.usuario || !Number.isInteger(datos.usuario.id_usuario)) {
+                return null;
+            }
+            return datos;
         } catch (error) {
             return null;
         }
     }
 
-    function guardar(idUsuario) {
+    /** Token de acceso de la sesión activa, o null. */
+    function token() {
+        var sesion = obtener();
+        return sesion ? sesion.token : null;
+    }
+
+    /** Usuario autenticado (id, nombre, correo), o null. */
+    function usuario() {
+        var sesion = obtener();
+        return sesion ? sesion.usuario : null;
+    }
+
+    /** Identificador del usuario autenticado, o null. */
+    function idUsuario() {
+        var actual = usuario();
+        return actual ? actual.id_usuario : null;
+    }
+
+    /**
+     * Guarda la sesión devuelta por POST /api/auth/login.
+     *
+     * Del usuario solo se conservan los datos públicos que la interfaz necesita
+     * mostrar. La contraseña no se guarda en ningún momento.
+     */
+    function guardar(respuestaLogin) {
+        var datos = {
+            token: respuestaLogin.access_token,
+            usuario: {
+                id_usuario: respuestaLogin.usuario.id_usuario,
+                nombre: respuestaLogin.usuario.nombre,
+                correo: respuestaLogin.usuario.correo
+            }
+        };
         try {
-            window.sessionStorage.setItem(CONFIG.CLAVE_SESION, String(idUsuario));
+            window.sessionStorage.setItem(CONFIG.CLAVE_SESION, JSON.stringify(datos));
         } catch (error) {
             /* Modo privado sin almacenamiento: la navegación seguirá funcionando,
                pero el panel volverá a pedir acceso. */
         }
     }
 
+    /** Borra la sesión del navegador (cierre de sesión). */
     function borrar() {
         try {
             window.sessionStorage.removeItem(CONFIG.CLAVE_SESION);
@@ -58,18 +111,13 @@
     }
 
     /**
-     * Comprueba contra la base de datos que el usuario existe.
+     * Comprueba contra el backend que el token sigue siendo válido.
      *
-     * Se reutiliza GET /api/categorias porque valida la existencia del usuario
-     * antes de responder: devuelve 200 (aunque la lista esté vacía) si existe y
-     * 404 si no. Es el endpoint existente más barato para esta comprobación; en
-     * cuanto el backend exponga un login o un GET /api/usuarios/{id}, esta
-     * función debería apuntar allí.
-     *
-     * @throws {Error} ErrorApi si el usuario no existe o la API no responde.
+     * Devuelve el usuario autenticado. Lanza ErrorApi con estado 401 si el
+     * token expiró, fue manipulado o el usuario ya no existe.
      */
-    async function verificarUsuario(idUsuario) {
-        await Api.categorias.listar(idUsuario);
+    async function verificar() {
+        return Api.auth.yo();
     }
 
     function irAlPanel() {
@@ -80,13 +128,47 @@
         window.location.href = PAGINA_ACCESO;
     }
 
+    /**
+     * Cierra la sesión y vuelve a la pantalla de acceso.
+     *
+     * @param {string} [motivo] Texto a mostrar en el acceso, por ejemplo cuando
+     *                          la sesión ha caducado.
+     */
+    function cerrar(motivo) {
+        borrar();
+        if (motivo) {
+            try {
+                window.sessionStorage.setItem("finanzas.motivo_salida", motivo);
+            } catch (error) {
+                /* Sin almacenamiento simplemente no se muestra el aviso. */
+            }
+        }
+        irAlAcceso();
+    }
+
+    /** Recupera y consume el motivo del último cierre de sesión, si lo hubo. */
+    function motivoDeSalida() {
+        try {
+            var motivo = window.sessionStorage.getItem("finanzas.motivo_salida");
+            window.sessionStorage.removeItem("finanzas.motivo_salida");
+            return motivo || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
     App.Sesion = {
         PAGINA_ACCESO: PAGINA_ACCESO,
         PAGINA_PANEL: PAGINA_PANEL,
         obtener: obtener,
+        token: token,
+        usuario: usuario,
+        idUsuario: idUsuario,
         guardar: guardar,
         borrar: borrar,
-        verificarUsuario: verificarUsuario,
+        verificar: verificar,
+        cerrar: cerrar,
+        motivoDeSalida: motivoDeSalida,
         irAlPanel: irAlPanel,
         irAlAcceso: irAlAcceso
     };

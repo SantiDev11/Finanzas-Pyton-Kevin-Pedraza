@@ -2,8 +2,10 @@
  * categorias.js — Gestión de categorías.
  *
  * Endpoints utilizados (los únicos que expone el backend para categorías):
- *   GET  /api/categorias?id_usuario=
+ *   GET  /api/categorias
  *   POST /api/categorias
+ *
+ * Ninguno lleva id_usuario: el backend deduce el propietario del token.
  *
  * El módulo mantiene además la caché de categorías del usuario activo, que
  * reutilizan los desplegables de movimientos y la tabla de anomalías para
@@ -15,7 +17,7 @@
     var Api = App.Api;
     var UI = App.UI;
 
-    /** Categorías del usuario activo. */
+    /** Categorías del usuario autenticado. */
     var categorias = [];
 
     var nodos = {};
@@ -62,13 +64,13 @@
      * Descarga las categorías del usuario, actualiza la caché y repinta la tabla.
      * No propaga la excepción: el error se refleja en el estado de la sección.
      */
-    async function sincronizar(idUsuario) {
+    async function sincronizar() {
         UI.mostrarEstado(nodos.estado, "cargando", "Cargando categorías…");
         nodos.tabla.hidden = true;
         nodos.contador.textContent = "";
 
         try {
-            categorias = await Api.categorias.listar(idUsuario);
+            categorias = await Api.categorias.listar();
             renderizar();
         } catch (error) {
             categorias = [];
@@ -85,7 +87,7 @@
         if (!categorias.length) {
             nodos.tabla.hidden = true;
             nodos.contador.textContent = "";
-            UI.mostrarEstado(nodos.estado, "vacio", "No hay categorías registradas para este usuario.");
+            UI.mostrarEstado(nodos.estado, "vacio", "No hay categorías registradas todavía.");
             return;
         }
 
@@ -130,12 +132,11 @@
         try {
             await Api.categorias.crear({
                 nombre: nombre,
-                tipo: nodos.tipo.value,
-                id_usuario: App.usuarioActivo()
+                tipo: nodos.tipo.value
             });
             nodos.formulario.reset();
             UI.notificar("Categoría creada correctamente.", "exito");
-            await sincronizar(App.usuarioActivo());
+            await sincronizar();
         } catch (error) {
             UI.mostrarErrorFormulario(nodos.error, UI.mensajeDeExcepcion(error));
         } finally {

@@ -2,11 +2,14 @@
  * login.js — Lógica de la pantalla de acceso (index.html).
  *
  * Flujo:
- *   - Iniciar sesión: acepta identificador de usuario (ID) o correo electrónico
- *     asociado a la cuenta, valida existencia contra MySQL y establece la sesión.
- *   - Crear cuenta:   POST /api/usuarios (la API cifra con bcrypt en backend).
+ *   - Iniciar sesión: POST /api/auth/login con correo y contraseña. El backend
+ *     verifica la contraseña contra el hash bcrypt y devuelve un JWT.
+ *   - Crear cuenta:   POST /api/usuarios y, acto seguido, login automático con
+ *     esas mismas credenciales.
  *
- * En ambos casos, al validar se guarda la sesión y se redirige al panel.
+ * La contraseña solo existe dentro del formulario y del cuerpo de la petición:
+ * no se guarda en el navegador, no se registra en consola y no se conserva
+ * después del envío.
  */
 (function (App) {
     "use strict";
@@ -23,7 +26,7 @@
             paneles: Array.prototype.slice.call(document.querySelectorAll(".acceso__panel")),
 
             formIngreso: document.getElementById("form-ingreso"),
-            ingresoId: document.getElementById("ingreso-id"),
+            ingresoCorreo: document.getElementById("ingreso-correo"),
             ingresoContrasena: document.getElementById("ingreso-contrasena"),
             errorIngreso: document.getElementById("error-ingreso"),
             botonIngresar: document.getElementById("boton-ingresar"),
@@ -49,103 +52,93 @@
                 pestana.removeAttribute("aria-current");
             }
         });
-        if (nombre === "ingreso" && nodos.ingresoId) {
-            nodos.ingresoId.focus();
+        if (nombre === "ingreso" && nodos.ingresoCorreo) {
+            nodos.ingresoCorreo.focus();
         } else if (nombre === "registro" && nodos.registroNombre) {
             nodos.registroNombre.focus();
         }
     }
 
-    /** Guarda la sesión y navega al panel financiero. */
-    function entrar(idUsuario) {
-        Sesion.guardar(idUsuario);
+    /**
+     * Guarda la sesión devuelta por el login y navega al panel.
+     *
+     * El formulario se limpia antes de salir para que la contraseña no quede
+     * en el DOM si el usuario vuelve atrás en el historial.
+     */
+    function entrar(respuestaLogin, formulario) {
+        Sesion.guardar(respuestaLogin);
+        if (formulario) {
+            formulario.reset();
+        }
         Sesion.irAlPanel();
     }
 
-    /** Guarda la asociación de correo a idUsuario en el navegador */
-    function recordarUsuario(correo, idUsuario) {
+    /** Recuerda el último correo usado, para no tener que reescribirlo. */
+    function recordarCorreo(correo) {
         try {
-            if (correo) {
-                window.localStorage.setItem("finanzas.correo." + correo.toLowerCase().trim(), String(idUsuario));
-            }
-            window.localStorage.setItem("finanzas.ultimo_id", String(idUsuario));
-        } catch (e) {
-            /* Modo privado sin persistencia */
+            window.localStorage.setItem("finanzas.ultimo_correo", correo);
+        } catch (error) {
+            /* Modo privado sin persistencia: no es un problema. */
         }
     }
 
-    /** Busca el ID de usuario a partir del valor ingresado (número o correo guardado) */
-    function resolverIdentificador(valor) {
-        var texto = (valor || "").trim();
-        if (!texto) {
-            return null;
-        }
-
-        // Si es un número entero directo
-        var idNumerico = Number(texto);
-        if (Number.isInteger(idNumerico) && idNumerico > 0) {
-            return idNumerico;
-        }
-
-        // Si es un correo, buscar en la asociación local del navegador
+    function correoRecordado() {
         try {
-            var idGuardado = window.localStorage.getItem("finanzas.correo." + texto.toLowerCase());
-            if (idGuardado) {
-                var parseado = Number(idGuardado);
-                if (Number.isInteger(parseado) && parseado > 0) {
-                    return parseado;
-                }
-            }
-        } catch (e) {
-            // Ignorar error de almacenamiento
+            return window.localStorage.getItem("finanzas.ultimo_correo") || "";
+        } catch (error) {
+            return "";
         }
-
-        return null;
     }
+
+    /* ======================================================================
+       INICIO DE SESIÓN
+       ====================================================================== */
 
     async function alIniciarSesion(evento) {
         evento.preventDefault();
         UI.limpiarErrorFormulario(nodos.errorIngreso);
 
-        var valorEntrada = nodos.ingresoId.value.trim();
-        var idUsuario = resolverIdentificador(valorEntrada);
+        var correo = nodos.ingresoCorreo.value.trim();
+        var contrasena = nodos.ingresoContrasena.value;
 
-        if (!valorEntrada) {
-            nodos.ingresoId.setAttribute("aria-invalid", "true");
-            UI.mostrarErrorFormulario(nodos.errorIngreso, "Por favor ingresa tu identificador de usuario (ID) o correo electrónico.");
-            nodos.ingresoId.focus();
+        if (!correo || !correo.includes("@")) {
+            nodos.ingresoCorreo.setAttribute("aria-invalid", "true");
+            UI.mostrarErrorFormulario(nodos.errorIngreso, "Introduce un correo electrónico válido.");
+            nodos.ingresoCorreo.focus();
             return;
         }
+        nodos.ingresoCorreo.removeAttribute("aria-invalid");
 
-        if (idUsuario === null) {
-            // Si introdujo un correo que no está mapeado aún localmente
-            if (valorEntrada.includes("@")) {
-                nodos.ingresoId.setAttribute("aria-invalid", "true");
-                UI.mostrarErrorFormulario(
-                    nodos.errorIngreso,
-                    "El backend actual valida usuarios mediante identificador numérico (ID). Si es tu primera vez en este navegador, ingresa tu ID numérico (ej: 1) o crea una nueva cuenta en la pestaña 'Crear cuenta'."
-                );
-            } else {
-                nodos.ingresoId.setAttribute("aria-invalid", "true");
-                UI.mostrarErrorFormulario(nodos.errorIngreso, "Introduce un identificador de usuario válido (número entero positivo).");
-            }
-            nodos.ingresoId.focus();
+        if (!contrasena) {
+            nodos.ingresoContrasena.setAttribute("aria-invalid", "true");
+            UI.mostrarErrorFormulario(nodos.errorIngreso, "Introduce tu contraseña.");
+            nodos.ingresoContrasena.focus();
             return;
         }
+        nodos.ingresoContrasena.removeAttribute("aria-invalid");
 
-        nodos.ingresoId.removeAttribute("aria-invalid");
         nodos.botonIngresar.disabled = true;
+        nodos.botonIngresar.textContent = "Verificando…";
 
         try {
-            await Sesion.verificarUsuario(idUsuario);
-            recordarUsuario(valorEntrada.includes("@") ? valorEntrada : null, idUsuario);
-            entrar(idUsuario);
+            var respuesta = await Api.auth.iniciarSesion(correo, contrasena);
+            recordarCorreo(correo);
+            entrar(respuesta, nodos.formIngreso);
         } catch (error) {
-            nodos.ingresoId.setAttribute("aria-invalid", "true");
+            // El backend devuelve el mismo mensaje para correo inexistente y
+            // contraseña incorrecta; aquí no se añade ninguna pista adicional.
+            nodos.ingresoContrasena.value = "";
+            nodos.ingresoCorreo.setAttribute("aria-invalid", "true");
+            nodos.ingresoContrasena.setAttribute("aria-invalid", "true");
             UI.mostrarErrorFormulario(nodos.errorIngreso, UI.mensajeDeExcepcion(error));
             nodos.botonIngresar.disabled = false;
+            nodos.botonIngresar.textContent = "Iniciar sesión";
         }
     }
+
+    /* ======================================================================
+       REGISTRO
+       ====================================================================== */
 
     async function alRegistrar(evento) {
         evento.preventDefault();
@@ -174,43 +167,63 @@
         }
 
         nodos.botonRegistrar.disabled = true;
+        nodos.botonRegistrar.textContent = "Creando cuenta…";
 
         try {
-            var usuario = await Api.usuarios.registrar({
+            await Api.usuarios.registrar({
                 nombre: nombre,
                 correo: correo,
                 contrasena: contrasena
             });
-            recordarUsuario(correo, usuario.id_usuario);
-            nodos.formRegistro.reset();
-            entrar(usuario.id_usuario);
+
+            // Alta correcta: se inicia sesión con esas mismas credenciales para
+            // que el usuario entre directamente, sin escribirlas otra vez.
+            var respuesta = await Api.auth.iniciarSesion(correo, contrasena);
+            recordarCorreo(correo);
+            entrar(respuesta, nodos.formRegistro);
         } catch (error) {
             UI.mostrarErrorFormulario(nodos.errorRegistro, UI.mensajeDeExcepcion(error));
             nodos.botonRegistrar.disabled = false;
+            nodos.botonRegistrar.textContent = "Crear cuenta y entrar";
         }
     }
 
+    /* ======================================================================
+       ARRANQUE
+       ====================================================================== */
+
     /**
-     * Si ya había una sesión válida en esta pestaña, se continúa al panel.
+     * Si ya hay una sesión válida en esta pestaña, se continúa al panel.
+     *
+     * El token se valida contra el backend (GET /api/auth/me): tener algo
+     * guardado no basta, puede haber caducado.
      */
     async function continuarSiHaySesion() {
-        var guardado = Sesion.obtener();
-        if (guardado === null) {
-            // Sugerir el último ID si existe
-            try {
-                var ultimoId = window.localStorage.getItem("finanzas.ultimo_id");
-                if (ultimoId && nodos.ingresoId && !nodos.ingresoId.value) {
-                    nodos.ingresoId.value = ultimoId;
-                }
-            } catch (e) { }
+        // Aviso heredado del cierre de sesión anterior (por ejemplo, expiración).
+        var motivo = Sesion.motivoDeSalida();
+        if (motivo) {
+            UI.mostrarErrorFormulario(nodos.errorIngreso, motivo);
+        }
+
+        if (nodos.ingresoCorreo && !nodos.ingresoCorreo.value) {
+            nodos.ingresoCorreo.value = correoRecordado();
+        }
+
+        if (Sesion.obtener() === null) {
             return;
         }
+
         try {
-            await Sesion.verificarUsuario(guardado);
+            await Sesion.verificar();
             Sesion.irAlPanel();
         } catch (error) {
             Sesion.borrar();
-            UI.mostrarErrorFormulario(nodos.errorIngreso, "La sesión anterior expiró o ya no es válida.");
+            if (!motivo) {
+                UI.mostrarErrorFormulario(
+                    nodos.errorIngreso,
+                    "La sesión anterior expiró o ya no es válida. Vuelve a iniciar sesión."
+                );
+            }
         }
     }
 

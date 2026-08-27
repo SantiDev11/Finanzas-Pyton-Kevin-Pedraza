@@ -1,4 +1,6 @@
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
 from app.core.exceptions import AppException
+from app.routes.auth_routes import router as auth_router
 from app.routes.usuarios_routes import router as usuarios_router
 from app.routes.categorias_routes import router as categorias_router
 from app.routes.movimientos_routes import router as movimientos_router
@@ -19,12 +22,41 @@ logging.basicConfig(
 )
 logger = logging.getLogger("finanzas_api")
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """
+    Comprueba al arrancar que la configuración sensible es apta para el entorno.
+
+    En producción, arrancar sin SECRET_KEY sería silenciosamente peligroso: se
+    generaría una clave efímera y distinta en cada réplica, así que los tokens
+    dejarían de valer de forma intermitente. Por eso aquí se aborta el arranque
+    en lugar de continuar.
+    """
+    problemas = settings.validar_produccion()
+    if problemas:
+        for problema in problemas:
+            logger.critical("Configuración inválida para producción: %s", problema)
+        raise RuntimeError(
+            "La aplicación no puede arrancar en producción con esta configuración: "
+            + " | ".join(problemas)
+        )
+
+    if settings.SECRET_KEY_ES_EFIMERA:
+        logger.warning(
+            "SECRET_KEY no configurada: se ha generado una clave efímera para desarrollo. "
+            "Los tokens dejarán de ser válidos al reiniciar el servidor."
+        )
+
+    yield
+
+
 app = FastAPI(
     title="API de Finanzas Personales",
     description="Backend RESTful con arquitectura por capas para gestión de finanzas personales.",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Configuración de CORS
@@ -33,12 +65,16 @@ app = FastAPI(
 # variable llegara vacía, se cae a los orígenes locales de desarrollo en lugar
 # de abrir la API a cualquier origen. Un comodín junto a allow_credentials=True
 # es además una combinación que los navegadores rechazan.
+#
+# "Authorization" DEBE figurar en allow_headers: el frontend envía el token en
+# esa cabecera y, al no ser una cabecera "simple", el navegador la anuncia en
+# el preflight. Si no se permite, el preflight falla y el token nunca llega.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Accept", "Content-Type"],
+    allow_headers=["Accept", "Authorization", "Content-Type"],
 )
 
 
@@ -49,9 +85,11 @@ app.add_middleware(
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     """Maneja excepciones de dominio de la aplicación."""
+    cabeceras = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.message}
+        content={"detail": exc.message},
+        headers=cabeceras,
     )
 
 
@@ -82,6 +120,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # REGISTRO DE RUTAS
 # =============================================================================
 
+app.include_router(auth_router)
 app.include_router(usuarios_router)
 app.include_router(categorias_router)
 app.include_router(movimientos_router)

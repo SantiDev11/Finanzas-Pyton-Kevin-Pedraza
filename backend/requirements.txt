@@ -9,6 +9,7 @@ python-dotenv>=1.0.1
 pymysql>=1.1.0
 cryptography>=42.0.0
 bcrypt>=4.1.0
+PyJWT>=2.8.0
 
 # Data Analysis & Machine Learning
 pandas>=2.2.0

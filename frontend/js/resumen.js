@@ -2,7 +2,7 @@
  * resumen.js — Resumen financiero mensual y KPI cards.
  *
  * Endpoint:
- *   GET /api/resumen?id_usuario=&mes=
+ *   GET /api/resumen?mes=
  *
  * Los importes (ingresos, gastos y balance) provienen directamente de la API.
  */
@@ -33,10 +33,9 @@
 
     /**
      * Descarga y muestra los KPI cards del resumen del mes indicado.
-     * @param {number} idUsuario
-     * @param {string} [mes] Periodo YYYY-MM.
+     * @param {string} [mes] Periodo YYYY-MM. Por defecto, el del selector.
      */
-    async function cargar(idUsuario, mes) {
+    async function cargar(mes) {
         var periodo = mes || mesSeleccionado();
         if (nodos.mes) {
             nodos.mes.value = periodo;
@@ -48,7 +47,7 @@
         }
 
         try {
-            var resumen = await Api.resumen.obtener(idUsuario, periodo);
+            var resumen = await Api.resumen.obtener(periodo);
             renderizar(resumen);
         } catch (error) {
             UI.mostrarEstado(nodos.estado, "error", UI.mensajeDeExcepcion(error));
@@ -86,7 +85,7 @@
             }
             return;
         }
-        cargar(App.usuarioActivo(), nodos.mes.value);
+        cargar(nodos.mes.value);
     }
 
     function inicializar() {

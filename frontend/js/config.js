@@ -11,7 +11,8 @@
  * añadiendo <meta name="api-base-url" content="..."> en su <head>.
  *
  * Aquí no se guarda ningún secreto: ni contraseñas, ni claves de API, ni
- * credenciales de base de datos. El frontend solo conoce la URL pública.
+ * credenciales de base de datos, ni la SECRET_KEY que firma los tokens (esa
+ * vive solo en el backend). El frontend solo conoce la URL pública.
  */
 (function (global) {
     "use strict";
@@ -33,6 +34,8 @@
 
         /** Rutas relativas de los endpoints existentes en el backend. */
         RUTAS: Object.freeze({
+            LOGIN: "/api/auth/login",
+            YO: "/api/auth/me",
             USUARIOS: "/api/usuarios",
             CATEGORIAS: "/api/categorias",
             MOVIMIENTOS: "/api/movimientos",
@@ -47,7 +50,12 @@
         /** Moneda de presentación: peso colombiano (ISO 4217). */
         MONEDA: "COP",
 
-        /** Clave de sesión: se guarda solo el id del usuario autenticado. */
+        /**
+         * Clave de sesión en sessionStorage.
+         *
+         * Guarda el token de acceso y los datos públicos del usuario (id,
+         * nombre y correo). Nunca la contraseña ni ningún hash.
+         */
         CLAVE_SESION: "finanzas.sesion",
 
         /** Número de movimientos mostrados en el panel. */

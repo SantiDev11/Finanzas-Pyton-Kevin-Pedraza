@@ -28,13 +28,17 @@ class MovimientoService:
         self._usuario_repo = usuario_repository or UsuarioRepository()
         self._categoria_repo = categoria_repository or CategoriaRepository()
 
-    def crear_movimiento(self, data: MovimientoCreate) -> MovimientoResponse:
+    def crear_movimiento(self, data: MovimientoCreate, id_usuario: int) -> MovimientoResponse:
         """
-        Crea un nuevo movimiento tras validar usuario, categoría, pertenencia y coherencia de tipo.
+        Crea un movimiento para el usuario autenticado.
+
+        `id_usuario` procede del token de acceso. La categoría se comprueba
+        contra ese mismo usuario, de modo que no es posible registrar un
+        movimiento usando la categoría de otra cuenta.
         """
         # 1. Validar que el usuario exista
-        if not self._usuario_repo.exists_by_id(data.id_usuario):
-            raise EntityNotFoundException(f"El usuario con ID {data.id_usuario} no existe.")
+        if not self._usuario_repo.exists_by_id(id_usuario):
+            raise EntityNotFoundException(f"El usuario con ID {id_usuario} no existe.")
 
         # 2. Validar que la categoría exista
         categoria = self._categoria_repo.get_by_id(data.id_categoria)
@@ -42,7 +46,7 @@ class MovimientoService:
             raise EntityNotFoundException(f"La categoría con ID {data.id_categoria} no existe.")
 
         # 3. Validar pertenencia de la categoría al usuario
-        if categoria["id_usuario"] != data.id_usuario:
+        if categoria["id_usuario"] != id_usuario:
             raise ValidationException("La categoría especificada no pertenece al usuario.")
 
         # 4. Validar coherencia entre tipo de movimiento y tipo de categoría
@@ -54,7 +58,7 @@ class MovimientoService:
 
         # 5. Persistir movimiento
         nuevo = self._movimiento_repo.create(
-            id_usuario=data.id_usuario,
+            id_usuario=id_usuario,
             id_categoria=data.id_categoria,
             tipo=data.tipo,
             monto=data.monto,
@@ -125,23 +129,26 @@ class MovimientoService:
         ]
 
     def actualizar_movimiento(
-        self, id_movimiento: int, data: MovimientoUpdate
+        self, id_movimiento: int, data: MovimientoUpdate, id_usuario: int
     ) -> MovimientoResponse:
         """
-        Actualiza un movimiento existente verificando pertenencia del movimiento, usuario y categoría.
+        Actualiza un movimiento del usuario autenticado.
+
+        Se comprueba que el movimiento pertenezca a quien hace la petición
+        ANTES de tocar nada, y que la categoría destino sea también suya.
         """
         # 1. Validar existencia del movimiento a modificar
         movimiento_actual = self._movimiento_repo.get_by_id(id_movimiento)
         if not movimiento_actual:
             raise EntityNotFoundException(f"El movimiento con ID {id_movimiento} no existe.")
 
-        # 2. Validar pertenencia del movimiento al usuario
-        if movimiento_actual["id_usuario"] != data.id_usuario:
+        # 2. Validar pertenencia del movimiento al usuario autenticado
+        if movimiento_actual["id_usuario"] != id_usuario:
             raise ValidationException("No tiene permisos para modificar un movimiento que pertenece a otro usuario.")
 
         # 3. Validar existencia del usuario
-        if not self._usuario_repo.exists_by_id(data.id_usuario):
-            raise EntityNotFoundException(f"El usuario con ID {data.id_usuario} no existe.")
+        if not self._usuario_repo.exists_by_id(id_usuario):
+            raise EntityNotFoundException(f"El usuario con ID {id_usuario} no existe.")
 
         # 4. Validar existencia de la categoría
         categoria = self._categoria_repo.get_by_id(data.id_categoria)
@@ -149,7 +156,7 @@ class MovimientoService:
             raise EntityNotFoundException(f"La categoría con ID {data.id_categoria} no existe.")
 
         # 5. Validar pertenencia de la categoría al usuario
-        if categoria["id_usuario"] != data.id_usuario:
+        if categoria["id_usuario"] != id_usuario:
             raise ValidationException("La categoría especificada no pertenece al usuario.")
 
         # 6. Validar coherencia tipo categoría/movimiento
@@ -181,23 +188,20 @@ class MovimientoService:
             fecha_creacion=actualizado.get("fecha_creacion"),
         )
 
-    def eliminar_movimiento(
-        self, id_movimiento: int, id_usuario: Optional[int] = None
-    ) -> MensajeResponse:
+    def eliminar_movimiento(self, id_movimiento: int, id_usuario: int) -> MensajeResponse:
         """
-        Elimina un movimiento tras validar su existencia y su pertenencia.
+        Elimina un movimiento del usuario autenticado.
 
-        `id_usuario` es opcional para no romper el contrato ya aprobado del
-        endpoint, pero cuando se envía se comprueba igual que en
-        actualizar_movimiento: un usuario no puede borrar un movimiento ajeno.
-        El frontend lo envía siempre.
+        `id_usuario` es obligatorio y procede del token: en la Fase 8 este
+        endpoint no comprobaba la pertenencia y permitía borrar el movimiento
+        de cualquier cuenta conociendo solo su identificador.
         """
         movimiento = self._movimiento_repo.get_by_id(id_movimiento)
         if not movimiento:
             raise EntityNotFoundException(f"El movimiento con ID {id_movimiento} no existe.")
 
         # Validar pertenencia del movimiento al usuario que solicita el borrado.
-        if id_usuario is not None and movimiento["id_usuario"] != id_usuario:
+        if movimiento["id_usuario"] != id_usuario:
             raise ValidationException(
                 "No tiene permisos para eliminar un movimiento que pertenece a otro usuario."
             )

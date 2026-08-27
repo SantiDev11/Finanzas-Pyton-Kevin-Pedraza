@@ -15,7 +15,7 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 * **Backend:** Python 3.10+ / FastAPI (Arquitectura RESTful por capas)
 * **Frontend:** HTML5 Semántico, CSS3 Moderno (Grid, Flexbox, variables) y JavaScript Vanilla (Fetch API), sin frameworks ni dependencias externas
 * **Base de Datos:** MySQL 8.0+ (Normalización 3FN con PyMySQL y SQL parametrizado)
-* **Seguridad:** Hashing seguro de contraseñas con `bcrypt` (rounds=12)
+* **Seguridad:** Hashing de contraseñas con `bcrypt` (rounds=12) y autenticación por **JWT** (`PyJWT`, HS256, con expiración)
 * **Análisis de Datos:** Pandas, Scikit-learn (LinearRegression, Z-Score)
 * **Testing:** Pytest, HTTPX (FastAPI TestClient)
 * **Control de Versiones & Despliegue:** Git, GitHub, Render
@@ -28,9 +28,9 @@ Proveer una solución integral que permita a los usuarios registrar sus movimien
 finanzas-personales/
 ├── backend/
 │   ├── app/
-│   │   ├── core/            # Configuración, seguridad (bcrypt), periodos, excepciones y dependencias
+│   │   ├── core/            # Configuración, seguridad (bcrypt + JWT), periodos, excepciones y dependencias
 │   │   ├── database/        # Conexión, transacción context manager y pool MySQL
-│   │   ├── routes/          # Controladores HTTP (Usuarios, Categorías, Movimientos, Resumen, Analítica)
+│   │   ├── routes/          # Controladores HTTP (Auth, Usuarios, Categorías, Movimientos, Resumen, Analítica)
 │   │   ├── services/        # Lógica de negocio y validaciones de dominio
 │   │   ├── repositories/    # Acceso a datos (SQL puro parametrizado)
 │   │   ├── models/          # Entidades de dominio
@@ -38,9 +38,9 @@ finanzas-personales/
 │   │   └── analytics/       # Módulo analítico: predicción (LinearRegression) y anomalías (Z-Score)
 │   │       ├── prediction.py  # Preparación de datos, entrenamiento y predicción
 │   │       └── anomalies.py   # Detección de gastos atípicos por Z-Score
-│   ├── tests/               # Pruebas unitarias e integración (136 tests automatizados)
+│   ├── tests/               # Pruebas unitarias e integración (171 tests automatizados)
 │   │   ├── unit/            # Tests de servicios, periodos, predicción, anomalías y seguridad
-│   │   └── integration/     # Tests de endpoints HTTP
+│   │   └── integration/     # Tests de endpoints HTTP, incluida la autenticación (test_api_auth.py)
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
 ├── frontend/
@@ -56,7 +56,7 @@ finanzas-personales/
 │   │   ├── config.js        # Configuración única (URL de la API, rutas)
 │   │   ├── api.js           # Capa centralizada de fetch y errores
 │   │   ├── ui.js            # Formateo (COP), estados de UI, diálogos y avisos
-│   │   ├── sesion.js        # Sesión compartida por las dos páginas
+│   │   ├── sesion.js        # Sesión autenticada: token, usuario y cierre de sesión
 │   │   ├── login.js         # Lógica de index.html (acceso y registro)
 │   │   ├── app.js           # Lógica de dashboard.html (guardián y navegación)
 │   │   ├── dashboard.js     # Vista principal (panel)
@@ -78,6 +78,21 @@ finanzas-personales/
 
 ---
 
+## 🔐 Seguridad
+
+| Aspecto | Implementación |
+|---|---|
+| Contraseñas | `bcrypt` con coste 12 y salt aleatorio. Nunca en texto plano, nunca en las respuestas. |
+| Autenticación | JWT firmado (`HS256` por defecto) con expiración. |
+| Clave de firma | `SECRET_KEY` por variable de entorno; jamás en el repositorio. |
+| Autorización | Dependencia `get_current_user()` en todos los endpoints sensibles. |
+| Aislamiento | La identidad sale del token; `id_usuario` del cliente se ignora. |
+| Enumeración de usuarios | Mensaje de error idéntico para correo inexistente y contraseña incorrecta. |
+| SQL Injection | Consultas parametrizadas en toda la capa de repositorios. |
+| Fugas de información | Los errores del motor MySQL solo van al log; el cliente recibe mensajes genéricos. |
+
+---
+
 ## 🗄️ Base de Datos y Variables de Entorno
 
 ### Configuración del Entorno (`.env`)
@@ -95,9 +110,24 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=finanzas_personales
+
+# Autenticación JWT
+SECRET_KEY=<genera la tuya, ver más abajo>
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
-> **Nota de Seguridad:** El archivo `.env` está expresamente excluido en `.gitignore`. Nunca subas credenciales reales al repositorio.
+`SECRET_KEY` firma los tokens de acceso. Genera una propia con:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+En **desarrollo** puede omitirse: la aplicación genera una clave efímera en
+cada arranque y avisa por log (los tokens dejan de valer al reiniciar). En
+**producción** es obligatoria y el arranque se aborta si falta.
+
+> **Nota de Seguridad:** El archivo `.env` está expresamente excluido en `.gitignore`. Nunca subas credenciales reales ni la `SECRET_KEY` al repositorio.
 
 ### Creación del Esquema en MySQL 8.0+
 
@@ -214,7 +244,7 @@ CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:5500","http://localhost:
 
 Si sirves el frontend en otro puerto, añádelo a esa lista en tu `.env`.
 
-### 5. Acceso y mecanismo de usuario
+### 5. Acceso, autenticación y sesión
 
 El frontend son **dos páginas**:
 
@@ -223,50 +253,83 @@ El frontend son **dos páginas**:
 | `index.html` | Acceso: formularios de inicio de sesión y de registro. Es el punto de entrada. |
 | `dashboard.html` | Toda la lógica del proyecto: panel, movimientos, categorías, resumen y análisis. |
 
-`dashboard.html` no se muestra sin sesión: al cargar comprueba la sesión, y si
-no hay ninguna válida redirige a `index.html`. A la inversa, `index.html`
-continúa automáticamente al panel cuando ya existe una sesión válida.
+`dashboard.html` no muestra nada sin una sesión válida: al cargar valida el
+token contra `GET /api/auth/me` y, si no es correcto, redirige a `index.html`.
+A la inversa, `index.html` continúa automáticamente al panel cuando el token
+guardado sigue siendo válido.
 
-* **Iniciar sesión** — se introduce el identificador de usuario y el frontend
-  comprueba contra MySQL, a través de la API, que ese usuario existe (los
-  endpoints responden `404` cuando no es así). Al entrar, se salta a
-  `dashboard.html` y todas las vistas trabajan exclusivamente con ese
-  `id_usuario`.
-* **Crear cuenta** — usa el endpoint existente `POST /api/usuarios`; la API
-  cifra la contraseña con bcrypt y devuelve el identificador, con el que se
-  entra directamente al panel.
-* **Cerrar sesión** — descarta el identificador y vuelve a `index.html`.
-
-La sesión se guarda en `sessionStorage` y contiene **solo el identificador**:
-nunca el correo ni la contraseña. Al cerrar la pestaña, la sesión termina y
-vuelve a exigirse el acceso; al recargarla, el identificador se revalida contra
-el backend antes de restaurar la sesión.
-
-> **Limitación conocida (verificada en la Fase 8).** La API actual expone
-> únicamente `POST /api/usuarios`; **no existe ningún endpoint de inicio de
-> sesión**, por lo que el frontend no puede verificar correo y contraseña.
->
-> El formulario de acceso sí incluye un campo de contraseña —es donde encajará
-> el login real cuando exista—, pero **ese valor no se envía a ninguna parte y
-> no se comprueba**. Lo único que se valida contra MySQL es que el usuario
-> exista. Tanto la pantalla de acceso como el propio campo lo advierten de
-> forma explícita para no aparentar una autenticación que no se realiza.
->
-> No se ha implementado JWT, OAuth ni ningún esquema de tokens, ni se ha
-> modificado el backend. El endpoint que haría falta se describe a
-> continuación.
-
-**Endpoint necesario para un login completo (pendiente de aprobación):**
+#### Flujo completo
 
 ```text
-POST /api/usuarios/login
-Body:      {"correo": str, "contrasena": str}
-Respuesta: 200 {"id_usuario": int, "nombre": str, "correo": str}
-           401 credenciales inválidas
+REGISTRO  ->  POST /api/usuarios      (contraseña hasheada con bcrypt)
+LOGIN     ->  POST /api/auth/login    (verifica el hash y emite un JWT)
+FRONTEND  ->  guarda el token en sessionStorage
+API       ->  cada petición envía  Authorization: Bearer <token>
+BACKEND   ->  valida firma y expiración, y deduce el usuario del token
+LOGOUT    ->  el frontend descarta el token y vuelve al acceso
 ```
 
-El backend ya tiene todas las piezas internas (`UsuarioRepository.get_by_email`
-y `core.security.verify_password`); solo faltaría la ruta que las exponga.
+* **Crear cuenta** — `POST /api/usuarios`. La API cifra la contraseña con
+  bcrypt (coste 12) y nunca la almacena en texto plano. Tras el alta, el
+  frontend inicia sesión automáticamente con esas mismas credenciales.
+* **Iniciar sesión** — correo y contraseña van en el **cuerpo** de
+  `POST /api/auth/login`, nunca en la URL. El backend compara la contraseña
+  con el hash almacenado y, si coincide, devuelve un JWT firmado.
+* **Cerrar sesión** — el frontend descarta el token, oculta el panel y vuelve
+  a `index.html`.
+
+#### El token JWT
+
+El token contiene **solo identidad y tiempos**: nunca la contraseña ni el hash.
+
+| Campo | Contenido |
+|---|---|
+| `sub` | Identificador del usuario (en cadena, como exige el RFC 7519) |
+| `correo` | Correo del usuario, para trazabilidad |
+| `iat` | Momento de emisión |
+| `exp` | Momento de expiración |
+
+Se firma con `SECRET_KEY` usando `ALGORITHM` (por defecto `HS256`) y caduca a
+los `ACCESS_TOKEN_EXPIRE_MINUTES` minutos (por defecto 60). Un token con la
+firma alterada, caducado, o de un usuario que ya no existe, se rechaza con
+`401`.
+
+#### Dónde se guarda el token, y por qué
+
+El token se guarda en **`sessionStorage`**. La alternativa a prueba de XSS
+sería una cookie `httpOnly`, que el JavaScript no puede leer; se ha descartado
+porque el frontend y la API son **dos servicios en orígenes distintos**, y una
+cookie entre orígenes exigiría `SameSite=None; Secure` más protección CSRF
+propia — un cambio de arquitectura que excede esta fase.
+
+Las mitigaciones que sí se aplican:
+
+* `sessionStorage` y no `localStorage`: el token muere al cerrar la pestaña,
+  en lugar de quedarse en disco indefinidamente;
+* el token **nunca** se escribe en consola ni se muestra en la interfaz;
+* el token **nunca** viaja en la URL, solo en la cabecera `Authorization`;
+* todo el renderizado usa `textContent`, nunca `innerHTML`: no hay ningún
+  punto por el que inyectar el script que leería el token;
+* los tokens caducan, así que uno robado tiene una ventana de uso limitada.
+
+> **Riesgo residual conocido.** Un XSS en el frontend podría leer el token de
+> `sessionStorage`. Se acepta de forma consciente y documentada; migrar a
+> cookies `httpOnly` con CSRF es la evolución natural cuando el despliegue
+> permita compartir dominio entre frontend y API.
+
+#### Aislamiento por usuario
+
+La identidad **siempre** procede del token. Los endpoints ya no aceptan
+`id_usuario` como parámetro:
+
+* enviarlo en la query string **se ignora**;
+* enviarlo en el cuerpo JSON **se ignora**;
+* no existe forma de leer, crear, modificar ni borrar datos de otra cuenta.
+
+Las comprobaciones de pertenencia siguen además en la capa de servicio y en la
+propia base de datos (la clave foránea compuesta `fk_movimientos_categoria`
+garantiza a nivel de motor que la categoría de un movimiento es del mismo
+usuario).
 
 ### 6. Moneda
 
@@ -282,52 +345,80 @@ pesos enteros mostraría una cifra distinta de la almacenada.
 
 ---
 
-## 📡 Endpoints Implementados (Fases 1 a 6)
+## 📡 Endpoints Implementados
+
+> **Todos los endpoints marcados con 🔒 exigen la cabecera
+> `Authorization: Bearer <token>`.** Sin ella responden `401 Unauthorized` con
+> `WWW-Authenticate: Bearer`. El usuario se deduce del token: **ningún endpoint
+> acepta ya `id_usuario` como parámetro**.
 
 ### Salud y Estado
 | Método | Endpoint | Propósito | Códigos |
 |---|---|---|---|
 | `GET` | `/` | Health check de la API | `200 OK` |
 
-### Usuarios y Categorías (Fase 3)
+### Autenticación (Fase 8A)
+| Método | Endpoint | Propósito | Request Body (JSON) | Códigos |
+|---|---|---|---|---|
+| `POST` | `/api/auth/login` | Verifica credenciales y emite un JWT | `{"correo": str, "contrasena": str}` | `200`, `401`, `422` |
+| `GET` 🔒 | `/api/auth/me` | Usuario del token; valida la sesión | Ninguno | `200`, `401` |
+
+Respuesta de `POST /api/auth/login`:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "usuario": { "id_usuario": 1, "nombre": "Ana Torres", "correo": "ana@example.com" }
+}
+```
+
+Un `401` en el login usa **el mismo mensaje** tanto si el correo no existe como
+si la contraseña es incorrecta, para no permitir enumerar las cuentas
+registradas.
+
+### Usuarios y Categorías
 | Método | Endpoint | Propósito | Request Body (JSON) | Códigos |
 |---|---|---|---|---|
 | `POST` | `/api/usuarios` | Registro de nuevo usuario | `{"nombre": str, "correo": str, "contrasena": str}` | `201`, `400`, `409`, `422` |
-| `POST` | `/api/categorias` | Creación de categoría | `{"nombre": str, "tipo": "ingreso"\|"gasto", "id_usuario": int}` | `201`, `400`, `404`, `409`, `422` |
-| `GET` | `/api/categorias?id_usuario=` | Listado de categorías de un usuario | Ninguno (Query Param) | `200`, `400`, `404` |
+| `POST` 🔒 | `/api/categorias` | Crea una categoría en la cuenta autenticada | `{"nombre": str, "tipo": "ingreso"\|"gasto"}` | `201`, `400`, `401`, `409`, `422` |
+| `GET` 🔒 | `/api/categorias` | Categorías del usuario autenticado | Ninguno | `200`, `401` |
 
-### Movimientos Financieros (Fase 4)
+### Movimientos Financieros
 | Método | Endpoint | Propósito | Request Body / Query Params | Códigos |
 |---|---|---|---|---|
-| `POST` | `/api/movimientos` | Registrar ingreso o gasto | `{"id_usuario": int, "id_categoria": int, "tipo": "ingreso"\|"gasto", "monto": Decimal, "fecha": date, "descripcion": str?}` | `201 Created`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable` |
-| `GET` | `/api/movimientos` | Listar con filtros | Query: `id_usuario` (req), `desde` (opt), `hasta` (opt), `categoria` (opt) | `200 OK`, `400 Bad Request`, `404 Not Found` |
-| `PUT` | `/api/movimientos/{id}` | Actualizar movimiento existente | Path: `id`. Body: `MovimientoUpdate` | `200 OK`, `400 Bad Request`, `404 Not Found`, `422` |
-| `DELETE` | `/api/movimientos/{id}` | Eliminar movimiento por ID | Path: `id`. Query: `id_usuario` (opt, valida la pertenencia) | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `POST` 🔒 | `/api/movimientos` | Registrar ingreso o gasto | `{"id_categoria": int, "tipo": "ingreso"\|"gasto", "monto": Decimal, "fecha": date, "descripcion": str?}` | `201`, `400`, `401`, `404`, `422` |
+| `GET` 🔒 | `/api/movimientos` | Listar los propios, con filtros | Query: `desde` (opt), `hasta` (opt), `categoria` (opt) | `200`, `400`, `401` |
+| `PUT` 🔒 | `/api/movimientos/{id}` | Actualizar un movimiento propio | Path: `id`. Body: `MovimientoUpdate` | `200`, `400`, `401`, `404`, `422` |
+| `DELETE` 🔒 | `/api/movimientos/{id}` | Eliminar un movimiento propio | Path: `id` | `200`, `400`, `401`, `404` |
 
 ### Reglas de Negocio en Movimientos:
 1. **Precisión Monetaria:** El monto se valida y procesa como tipo `Decimal(12,2)` estrictamente positivo (`monto > 0`).
 2. **Pertenencia de Categoría:** La categoría debe existir y pertenecer al mismo usuario (`id_usuario`).
 3. **Coherencia de Tipo:** El `tipo` del movimiento (`ingreso`/`gasto`) debe coincidir exactamente con el `tipo` de la categoría asignada.
 4. **Validación de Rangos:** En filtros de consulta, `desde` no puede ser posterior a `hasta`.
-5. **Pertenencia del Movimiento:** `PUT` rechaza (`400`) modificar un movimiento de otro usuario. `DELETE` aplica la misma comprobación cuando recibe `id_usuario`, que es lo que envía siempre el frontend.
+5. **Pertenencia del Movimiento:** `PUT` y `DELETE` rechazan (`400`) tocar un movimiento de otro usuario. El propietario se compara contra el usuario del token, que el cliente no puede falsificar.
 5. **Aislamiento por Usuario:** Las consultas y modificaciones verifican la titularidad del recurso, impidiendo accesos o ediciones no autorizadas.
 6. **Ordenamiento:** Los movimientos se listan ordenados de forma descendente (`fecha DESC, id_movimiento DESC`).
 
-### Resumen Financiero (Fase 5)
+### Resumen Financiero
 | Método | Endpoint | Propósito | Query Params | Códigos |
 |---|---|---|---|---|
-| `GET` | `/api/resumen` | Resumen financiero de un mes | `id_usuario` (req), `mes` (req, `YYYY-MM`) | `200 OK`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable` |
+| `GET` 🔒 | `/api/resumen` | Resumen financiero de un mes | `mes` (req, `YYYY-MM`) | `200`, `400`, `401`, `422` |
 
 **Parámetros:**
 
-* `id_usuario` — entero positivo. Si el usuario no existe se devuelve `404`.
 * `mes` — periodo en formato `YYYY-MM` (por ejemplo `2026-08`). Si el formato es incorrecto
   (`2026-8`, `agosto`) o el mes no existe (`2026-13`, `2026-00`) se devuelve `400`.
+
+El usuario ya **no** se envía: sale del token.
 
 **Ejemplo:**
 
 ```bash
-curl "http://127.0.0.1:8000/api/resumen?id_usuario=1&mes=2026-08"
+curl -H "Authorization: Bearer $TOKEN" \
+     "http://127.0.0.1:8000/api/resumen?mes=2026-08"
 ```
 
 ```json
@@ -361,8 +452,8 @@ con los tres importes en `0.00`.
 
 | Método | Endpoint | Propósito | Query Params | Códigos |
 |---|---|---|---|---|
-| `GET` | `/api/analitica/prediccion` | Predicción de gastos del próximo mes | `id_usuario` (req) | `200 OK`, `404 Not Found` |
-| `GET` | `/api/analitica/anomalias` | Detección de gastos atípicos | `id_usuario` (req) | `200 OK`, `404 Not Found` |
+| `GET` 🔒 | `/api/analitica/prediccion` | Predicción de gastos del próximo mes | `id_usuario` (req) | `200 OK`, `404 Not Found` |
+| `GET` 🔒 | `/api/analitica/anomalias` | Detección de gastos atípicos | `id_usuario` (req) | `200 OK`, `404 Not Found` |
 
 #### Predicción de Gastos (LinearRegression)
 
@@ -442,7 +533,9 @@ Detecta gastos atípicos utilizando **Z-Score agrupado por categoría**, conform
 
 ## 🧪 Pruebas Automatizadas
 
-La suite de pruebas contiene **138 tests automatizados** cubriendo casos de éxito, validaciones de borde, errores controlados, aislamiento por usuario y regresión:
+La suite contiene **171 tests automatizados** cubriendo casos de éxito,
+validaciones de borde, errores controlados, autenticación, aislamiento por
+usuario y regresión:
 
 ```bash
 .venv\Scripts\pytest backend/tests/ -v
@@ -450,6 +543,12 @@ La suite de pruebas contiene **138 tests automatizados** cubriendo casos de éxi
 
 Las pruebas usan repositorios en memoria (`backend/tests/conftest.py`), por lo
 que **no necesitan MySQL en ejecución** y no tocan datos reales.
+
+`backend/tests/integration/test_api_auth.py` cubre específicamente la
+autenticación: login correcto, contraseña incorrecta, usuario inexistente,
+token válido, expirado, malformado, firmado con otra clave o de un usuario
+eliminado, endpoints protegidos sin token, intentos de acceso cruzado entre
+usuarios y el flujo de cierre de sesión.
 
 ---
 
@@ -466,7 +565,9 @@ que **no necesitan MySQL en ejecución** y no tocan datos reales.
 | Puerto asignado por el entorno | `PORT` tiene prioridad sobre `APP_PORT` en `app/core/config.py` |
 | Arranque sin `--reload` | La recarga solo se activa con `APP_ENV=development`; el comando de producción no la usa |
 | Origen CORS configurable | `CORS_ORIGINS` se lee del entorno; nunca se usa `allow_origins=["*"]` |
+| Cabecera `Authorization` en CORS | Incluida en `allow_headers`; sin ella el preflight fallaría y el token nunca llegaría |
 | Credenciales fuera del código | Todas las variables sensibles salen de `.env` / variables de entorno |
+| Clave de firma JWT | `SECRET_KEY` obligatoria en producción: el arranque se **aborta** si falta |
 | URL de la API en el frontend | Declarada en un único punto (`frontend/js/config.js`) |
 
 ### Backend (Render — Web Service)
@@ -492,10 +593,27 @@ DB_USER=<usuario>
 DB_PASSWORD=<contraseña>
 DB_NAME=finanzas_personales
 CORS_ORIGINS=["https://<dominio-del-frontend>"]
+
+SECRET_KEY=<clave aleatoria de 64+ caracteres>
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
 `APP_HOST` y `APP_PORT` no se definen en producción: el host lo fija el comando
 de arranque y el puerto lo aporta `PORT`.
+
+**Sobre `SECRET_KEY`.** Es la clave que firma los tokens: quien la conozca
+puede emitir tokens válidos para cualquier usuario. Genérala con
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+y guárdala **solo** en las variables de entorno del servicio, nunca en el
+repositorio ni en este README. Debe ser **estable** entre reinicios y réplicas:
+si cambia, todas las sesiones abiertas dejan de valer. Con `APP_ENV=production`
+la aplicación se niega a arrancar si `SECRET_KEY` falta o es demasiado corta,
+en lugar de generar una clave efímera silenciosamente.
 
 > Render no ofrece MySQL gestionado. La base de datos debe alojarse en un
 > servicio externo (Railway, Aiven, PlanetScale, Clever Cloud u otro) y el
@@ -540,7 +658,8 @@ backend, o el navegador bloqueará las peticiones.
 * Confirmar que `CORS_ORIGINS` contiene el dominio real del frontend.
 * Considerar desactivar `/docs` y `/redoc` si la API no debe documentarse
   públicamente (hoy están abiertos).
-* Tener presente la limitación de autenticación descrita más arriba: **cualquier
-  cliente que conozca un `id_usuario` puede consultar sus datos**. Publicar la
-  API en Internet sin un endpoint de login expone los datos de todos los
-  usuarios.
+* Definir `SECRET_KEY` en el servicio y comprobar que el arranque no la rechaza.
+* Servir el frontend por **HTTPS**: el token viaja en cada petición y sobre
+  HTTP plano sería interceptable.
+* Revisar `ACCESS_TOKEN_EXPIRE_MINUTES`: 60 minutos es razonable para uso
+  interactivo; acortarlo reduce la ventana de un token robado.

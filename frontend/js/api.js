@@ -4,7 +4,8 @@
  * Responsabilidades:
  *   - construir las URLs a partir de App.CONFIG (única fuente de la base URL);
  *   - ejecutar todas las peticiones fetch de la aplicación;
- *   - fijar las cabeceras;
+ *   - adjuntar el token de acceso en la cabecera Authorization;
+ *   - detectar la expiración de la sesión (401) y avisar a la aplicación;
  *   - convertir cualquier fallo en un ErrorApi con un mensaje comprensible;
  *   - devolver siempre JSON ya parseado.
  *
@@ -17,6 +18,7 @@
 
     var MENSAJES_POR_ESTADO = {
         400: "La solicitud contiene datos inválidos.",
+        401: "Tu sesión no es válida o ha expirado. Vuelve a iniciar sesión.",
         404: "El recurso solicitado no existe.",
         409: "El recurso ya existe o entra en conflicto con otro.",
         422: "Algún dato del formulario no tiene el formato esperado.",
@@ -92,6 +94,17 @@
             headers: { Accept: "application/json" }
         };
 
+        // El token viaja siempre en la cabecera Authorization, nunca en la URL:
+        // un query string queda registrado en logs, historiales y proxies.
+        // App.Sesion se consulta aquí, y no al cargar el módulo, porque
+        // sesion.js se carga después que api.js.
+        if (!config.sinAutenticacion && App.Sesion) {
+            var token = App.Sesion.token();
+            if (token) {
+                peticion.headers["Authorization"] = "Bearer " + token;
+            }
+        }
+
         if (config.cuerpo !== undefined && config.cuerpo !== null) {
             peticion.headers["Content-Type"] = "application/json";
             peticion.body = JSON.stringify(config.cuerpo);
@@ -112,7 +125,18 @@
         }
 
         if (!respuesta.ok) {
-            throw ErrorApi(mensajeDeError(respuesta.status, datos), respuesta.status);
+            var error = ErrorApi(mensajeDeError(respuesta.status, datos), respuesta.status);
+
+            // Un 401 en una petición autenticada significa que la sesión dejó de
+            // valer (token caducado, manipulado, o usuario eliminado). Se avisa
+            // a quien escuche para que limpie la sesión y vuelva al acceso. En el
+            // propio login no aplica: allí un 401 solo indica credenciales
+            // incorrectas.
+            if (respuesta.status === 401 && !config.sinAutenticacion) {
+                document.dispatchEvent(new CustomEvent("sesion:expirada"));
+            }
+
+            throw error;
         }
 
         return datos;
@@ -122,17 +146,41 @@
         ErrorApi: ErrorApi,
         MENSAJE_RED: MENSAJE_RED,
 
+        auth: {
+            /**
+             * POST /api/auth/login
+             *
+             * Única petición que se envía sin token: es la que lo obtiene. Un
+             * 401 aquí significa credenciales incorrectas, no sesión caducada.
+             */
+            iniciarSesion: function (correo, contrasena) {
+                return solicitar(CONFIG.RUTAS.LOGIN, {
+                    metodo: "POST",
+                    cuerpo: { correo: correo, contrasena: contrasena },
+                    sinAutenticacion: true
+                });
+            },
+            /** GET /api/auth/me — comprueba que el token sigue siendo válido. */
+            yo: function () {
+                return solicitar(CONFIG.RUTAS.YO);
+            }
+        },
+
         usuarios: {
-            /** POST /api/usuarios */
+            /** POST /api/usuarios — registro, no requiere token. */
             registrar: function (datos) {
-                return solicitar(CONFIG.RUTAS.USUARIOS, { metodo: "POST", cuerpo: datos });
+                return solicitar(CONFIG.RUTAS.USUARIOS, {
+                    metodo: "POST",
+                    cuerpo: datos,
+                    sinAutenticacion: true
+                });
             }
         },
 
         categorias: {
-            /** GET /api/categorias?id_usuario= */
-            listar: function (idUsuario) {
-                return solicitar(CONFIG.RUTAS.CATEGORIAS, { parametros: { id_usuario: idUsuario } });
+            /** GET /api/categorias — las del usuario autenticado. */
+            listar: function () {
+                return solicitar(CONFIG.RUTAS.CATEGORIAS);
             },
             /** POST /api/categorias */
             crear: function (datos) {
@@ -141,10 +189,9 @@
         },
 
         movimientos: {
-            /** GET /api/movimientos?id_usuario=&desde=&hasta=&categoria= */
-            listar: function (idUsuario, filtros) {
-                var parametros = Object.assign({ id_usuario: idUsuario }, filtros || {});
-                return solicitar(CONFIG.RUTAS.MOVIMIENTOS, { parametros: parametros });
+            /** GET /api/movimientos?desde=&hasta=&categoria= */
+            listar: function (filtros) {
+                return solicitar(CONFIG.RUTAS.MOVIMIENTOS, { parametros: filtros || {} });
             },
             /** POST /api/movimientos */
             crear: function (datos) {
@@ -157,30 +204,29 @@
                     cuerpo: datos
                 });
             },
-            /** DELETE /api/movimientos/{id}?id_usuario= */
-            eliminar: function (idMovimiento, idUsuario) {
+            /** DELETE /api/movimientos/{id} */
+            eliminar: function (idMovimiento) {
                 return solicitar(CONFIG.RUTAS.MOVIMIENTOS + "/" + idMovimiento, {
-                    metodo: "DELETE",
-                    parametros: { id_usuario: idUsuario }
+                    metodo: "DELETE"
                 });
             }
         },
 
         resumen: {
-            /** GET /api/resumen?id_usuario=&mes= */
-            obtener: function (idUsuario, mes) {
-                return solicitar(CONFIG.RUTAS.RESUMEN, { parametros: { id_usuario: idUsuario, mes: mes } });
+            /** GET /api/resumen?mes= */
+            obtener: function (mes) {
+                return solicitar(CONFIG.RUTAS.RESUMEN, { parametros: { mes: mes } });
             }
         },
 
         analitica: {
-            /** GET /api/analitica/prediccion?id_usuario= */
-            prediccion: function (idUsuario) {
-                return solicitar(CONFIG.RUTAS.PREDICCION, { parametros: { id_usuario: idUsuario } });
+            /** GET /api/analitica/prediccion */
+            prediccion: function () {
+                return solicitar(CONFIG.RUTAS.PREDICCION);
             },
-            /** GET /api/analitica/anomalias?id_usuario= */
-            anomalias: function (idUsuario) {
-                return solicitar(CONFIG.RUTAS.ANOMALIAS, { parametros: { id_usuario: idUsuario } });
+            /** GET /api/analitica/anomalias */
+            anomalias: function () {
+                return solicitar(CONFIG.RUTAS.ANOMALIAS);
             }
         }
     };

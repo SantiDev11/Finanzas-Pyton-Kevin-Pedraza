@@ -2,7 +2,7 @@
  * app.js — Controlador principal del Panel de Control (dashboard.html).
  *
  * Responsabilidades:
- *   1. Exigir sesión válida antes de mostrar la interfaz (guardián de acceso).
+ *   1. Exigir un token válido antes de mostrar la interfaz (guardián de acceso).
  *   2. Inicializar los módulos funcionales con el usuario autenticado.
  *   3. Gestionar la navegación lateral (Sidebar) y migas de pan.
  *   4. Controlar el menú responsive en móviles y tablets.
@@ -12,8 +12,11 @@
 
     var Sesion = App.Sesion;
 
-    /** ID del usuario de la sesión activa */
+    /** ID del usuario autenticado, tomado del token validado por el backend. */
     var idUsuario = null;
+
+    /** Datos públicos del usuario autenticado (id, nombre, correo). */
+    var usuarioAutenticado = null;
 
     /** Vista actualmente visible */
     var vistaActiva = "panel";
@@ -27,10 +30,10 @@
 
     /** Cargador de datos asociado a cada vista */
     var CARGADORES = {
-        panel: function () { return App.Dashboard.cargar(idUsuario); },
-        movimientos: function () { return App.Movimientos.cargar(idUsuario); },
-        categorias: function () { return App.Categorias.sincronizar(idUsuario); },
-        analisis: function () { return App.Analytics.cargar(idUsuario); }
+        panel: function () { return App.Dashboard.cargar(); },
+        movimientos: function () { return App.Movimientos.cargar(); },
+        categorias: function () { return App.Categorias.sincronizar(); },
+        analisis: function () { return App.Analytics.cargar(); }
     };
 
     var nodos = {};
@@ -42,6 +45,7 @@
             pie: document.getElementById("pie-aplicacion"),
             tituloSeccion: document.getElementById("titulo-seccion-actual"),
             sesionUsuarioSidebar: document.getElementById("sesion-usuario-sidebar"),
+            correoUsuarioSidebar: document.getElementById("correo-usuario-sidebar"),
             avatarUsuario: document.getElementById("avatar-usuario"),
             botonCerrarSesion: document.getElementById("boton-cerrar-sesion"),
 
@@ -56,7 +60,13 @@
         };
     }
 
-    /** Devuelve el ID de usuario activo */
+    /**
+     * Devuelve el ID del usuario autenticado.
+     *
+     * Se conserva para los módulos que necesitan saber de quién son los datos
+     * que muestran. Ya NO se envía a la API: el backend deduce el usuario del
+     * token, así que este valor es informativo, no una credencial.
+     */
     function usuarioActivo() {
         if (idUsuario === null) {
             throw new Error("No hay ninguna sesión activa.");
@@ -133,34 +143,81 @@
         if (nodos.pie) {
             nodos.pie.hidden = false;
         }
-        if (nodos.sesionUsuarioSidebar) {
-            nodos.sesionUsuarioSidebar.textContent = "Usuario #" + idUsuario;
+        // Se muestra el nombre real del usuario autenticado, no un número.
+        // El token nunca se escribe en la interfaz ni en la consola.
+        if (nodos.sesionUsuarioSidebar && usuarioAutenticado) {
+            nodos.sesionUsuarioSidebar.textContent = usuarioAutenticado.nombre;
         }
-        if (nodos.avatarUsuario) {
-            nodos.avatarUsuario.textContent = "U" + idUsuario;
+        if (nodos.correoUsuarioSidebar && usuarioAutenticado) {
+            nodos.correoUsuarioSidebar.textContent = usuarioAutenticado.correo;
+        }
+        if (nodos.avatarUsuario && usuarioAutenticado) {
+            nodos.avatarUsuario.textContent = iniciales(usuarioAutenticado.nombre);
         }
     }
 
-    function cerrarSesion() {
-        Sesion.borrar();
+    /**
+     * Cierra la sesión: descarta el token, oculta la interfaz y vuelve al acceso.
+     *
+     * Ocultar el panel antes de navegar evita que quede a la vista, aunque sea
+     * un instante, como si la sesión siguiera abierta.
+     */
+    function cerrarSesion(motivo) {
+        ocultarAplicacion();
         idUsuario = null;
-        Sesion.irAlAcceso();
+        usuarioAutenticado = null;
+        Sesion.cerrar(motivo);
     }
 
+    function ocultarAplicacion() {
+        if (nodos.cabecera) {
+            nodos.cabecera.hidden = true;
+        }
+        if (nodos.contenido) {
+            nodos.contenido.hidden = true;
+        }
+        if (nodos.pie) {
+            nodos.pie.hidden = true;
+        }
+    }
+
+    /** Iniciales para el avatar, a partir del nombre del usuario. */
+    function iniciales(nombre) {
+        var partes = String(nombre || "").trim().split(/\s+/).filter(Boolean);
+        if (!partes.length) {
+            return "U";
+        }
+        if (partes.length === 1) {
+            return partes[0].slice(0, 2).toUpperCase();
+        }
+        return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+    }
+
+    /**
+     * Guardián de acceso: sin token válido no se muestra nada del panel.
+     *
+     * No basta con que haya algo guardado en el navegador: el token se valida
+     * contra el backend (GET /api/auth/me), que comprueba firma, expiración y
+     * existencia del usuario. La identidad que se usa después es la que
+     * devuelve el servidor, no la que estuviera guardada localmente.
+     */
     async function exigirSesion() {
-        var guardado = Sesion.obtener();
-        if (guardado === null) {
+        if (Sesion.obtener() === null) {
             Sesion.irAlAcceso();
             return false;
         }
+
         try {
-            await Sesion.verificarUsuario(guardado);
+            usuarioAutenticado = await Sesion.verificar();
         } catch (error) {
-            Sesion.borrar();
-            Sesion.irAlAcceso();
+            var motivo = (error && error.estado === 401)
+                ? "Tu sesión expiró. Vuelve a iniciar sesión."
+                : "No fue posible verificar tu sesión. Vuelve a iniciar sesión.";
+            Sesion.cerrar(motivo);
             return false;
         }
-        idUsuario = guardado;
+
+        idUsuario = usuarioAutenticado.id_usuario;
         return true;
     }
 
@@ -170,8 +227,19 @@
 
     function registrarEventos() {
         if (nodos.botonCerrarSesion) {
-            nodos.botonCerrarSesion.addEventListener("click", cerrarSesion);
+            nodos.botonCerrarSesion.addEventListener("click", function () {
+                cerrarSesion();
+            });
         }
+
+        // Si cualquier petición recibe un 401, la sesión dejó de valer: se
+        // cierra de inmediato en lugar de dejar el panel abierto mostrando
+        // errores sueltos.
+        document.addEventListener("sesion:expirada", function () {
+            if (idUsuario !== null) {
+                cerrarSesion("Tu sesión expiró. Vuelve a iniciar sesión.");
+            }
+        });
 
         if (nodos.botonMenuMovil) {
             nodos.botonMenuMovil.addEventListener("click", abrirSidebar);
@@ -207,7 +275,7 @@
         App.Dashboard.inicializar();
 
         mostrarAplicacion();
-        await App.Categorias.sincronizar(idUsuario);
+        await App.Categorias.sincronizar();
         await cambiarVista("panel");
     }
 

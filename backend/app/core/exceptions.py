@@ -28,3 +28,27 @@ class DatabaseException(AppException):
     """Excepción lanzada ante fallos en la capa de persistencia (500)."""
     def __init__(self, message: str = "Error interno de base de datos"):
         super().__init__(message=message, status_code=500)
+
+
+class AuthenticationException(AppException):
+    """
+    Excepción base para fallos de autenticación (401 Unauthorized).
+
+    El mensaje por defecto es deliberadamente genérico: distinguir entre
+    "el correo no existe" y "la contraseña es incorrecta" permitiría enumerar
+    las cuentas registradas.
+    """
+    def __init__(self, message: str = "Credenciales inválidas"):
+        super().__init__(message=message, status_code=401)
+
+
+class TokenInvalidoException(AuthenticationException):
+    """Token ausente, malformado o con firma no válida (401)."""
+    def __init__(self, message: str = "Token de acceso inválido o ausente"):
+        super().__init__(message=message)
+
+
+class TokenExpiradoException(AuthenticationException):
+    """Token correctamente firmado pero caducado (401)."""
+    def __init__(self, message: str = "La sesión ha expirado. Vuelve a iniciar sesión."):
+        super().__init__(message=message)

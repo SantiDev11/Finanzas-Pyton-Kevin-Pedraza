@@ -44,14 +44,14 @@
     }
 
     /** Descarga y pinta los últimos 5 movimientos */
-    async function cargarUltimosMovimientos(idUsuario) {
+    async function cargarUltimosMovimientos() {
         UI.mostrarEstado(nodos.estadoUltimos, "cargando", "Cargando movimientos recientes…");
         if (nodos.tablaUltimos) {
             nodos.tablaUltimos.hidden = true;
         }
 
         try {
-            var lista = await Api.movimientos.listar(idUsuario);
+            var lista = await Api.movimientos.listar();
             renderizarUltimos(lista.slice(0, CONFIG.MOVIMIENTOS_EN_PANEL));
             renderizarGraficos(lista);
         } catch (error) {
@@ -311,11 +311,11 @@
     }
 
     /** Carga global del Dashboard */
-    function cargar(idUsuario) {
+    function cargar() {
         return Promise.all([
-            App.Resumen.cargar(idUsuario),
-            cargarUltimosMovimientos(idUsuario),
-            App.Analytics.cargarPrediccionPanel(idUsuario)
+            App.Resumen.cargar(),
+            cargarUltimosMovimientos(),
+            App.Analytics.cargarPrediccionPanel()
         ]);
     }
 

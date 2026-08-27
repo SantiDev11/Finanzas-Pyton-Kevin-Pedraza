@@ -87,7 +87,7 @@
             </div>
 
             <footer class="branding__pie">
-                <p>Moneda de operación: COP (Peso colombiano) • Cifrado seguro de contraseñas con bcrypt</p>
+                <p>Moneda de operación: COP (Peso colombiano) • Contraseñas con bcrypt • Sesiones con JWT</p>
             </footer>
         </section>
 
@@ -126,21 +126,18 @@
                             
                             <div class="formulario__campos">
                                 <div class="campo campo--ancho-completo">
-                                    <label for="ingreso-id">Correo electrónico o Identificador (ID)</label>
-                                    <input type="text" id="ingreso-id" name="id_usuario" required autocomplete="username"
-                                        aria-describedby="ayuda-ingreso" placeholder="ejemplo@correo.com o ID de usuario">
+                                    <label for="ingreso-correo">Correo electrónico</label>
+                                    <input type="email" id="ingreso-correo" name="correo" required autocomplete="username"
+                                        aria-describedby="ayuda-ingreso" placeholder="ejemplo@correo.com">
                                     <p class="campo__ayuda" id="ayuda-ingreso">
-                                        Introduce tu correo registrado o el identificador devuelto por la API.
+                                        El correo con el que registraste tu cuenta.
                                     </p>
                                 </div>
 
                                 <div class="campo campo--ancho-completo">
                                     <label for="ingreso-contrasena">Contraseña</label>
                                     <input type="password" id="ingreso-contrasena" name="contrasena" required autocomplete="current-password"
-                                        placeholder="••••••••" aria-describedby="ayuda-contrasena-ingreso">
-                                    <p class="campo__ayuda" id="ayuda-contrasena-ingreso">
-                                        Pendiente de verificación: el backend aún no expone un endpoint de inicio de sesión (véase la nota inferior).
-                                    </p>
+                                        placeholder="••••••••">
                                 </div>
                             </div>
 
@@ -154,13 +151,13 @@
                         </fieldset>
                     </form>
 
-                    <aside class="nota nota--aviso" aria-label="Limitación conocida del acceso">
-                        <h4>Alcance actual del acceso</h4>
+                    <aside class="nota nota--info" aria-label="Información sobre la seguridad del acceso">
+                        <h4>Cómo se protege tu cuenta</h4>
                         <p>
-                            La API todavía no expone un endpoint de verificación de credenciales: el único endpoint de usuarios es <code>POST /api/usuarios</code> (registro). El acceso comprueba contra MySQL que el usuario exista y guarda la sesión en esta pestaña, pero <strong>la contraseña no se verifica en el backend</strong>. No hay JWT ni tokens de sesión.
+                            La contraseña se verifica en el backend contra un hash <strong>bcrypt</strong>; nunca se almacena en texto plano ni se guarda en el navegador. Un acceso correcto devuelve un <strong>token JWT firmado y con caducidad</strong>, que acompaña a cada petición y es lo único que determina a qué datos tienes acceso.
                         </p>
                         <p>
-                            Las contraseñas sí se cifran con bcrypt al registrarse y nunca se almacenan en el navegador. La verificación real queda pendiente de un endpoint de inicio de sesión en el backend.
+                            La sesión vive únicamente en esta pestaña: al cerrarla, termina.
                         </p>
                     </aside>
                 </section>

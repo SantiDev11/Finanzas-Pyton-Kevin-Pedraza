@@ -2,10 +2,13 @@
  * movimientos.js — Alta, consulta, edición, eliminación y filtrado.
  *
  * Endpoints utilizados:
- *   GET    /api/movimientos?id_usuario=&desde=&hasta=&categoria=
+ *   GET    /api/movimientos?desde=&hasta=&categoria=
  *   POST   /api/movimientos
  *   PUT    /api/movimientos/{id}
- *   DELETE /api/movimientos/{id}?id_usuario=
+ *   DELETE /api/movimientos/{id}
+ *
+ * Ninguno lleva id_usuario: el backend deduce el propietario del token y
+ * rechaza cualquier intento de tocar datos de otra cuenta.
  *
  * Las validaciones que se hacen aquí son exclusivamente de experiencia de uso:
  * el backend vuelve a validar cada campo y sigue siendo la autoridad.
@@ -78,13 +81,13 @@
     /**
      * Descarga los movimientos del usuario aplicando los filtros del formulario.
      */
-    async function cargar(idUsuario) {
+    async function cargar() {
         UI.mostrarEstado(nodos.estado, "cargando", "Cargando movimientos…");
         nodos.tabla.hidden = true;
         nodos.contador.textContent = "";
 
         try {
-            movimientos = await Api.movimientos.listar(idUsuario, filtrosActivos());
+            movimientos = await Api.movimientos.listar(filtrosActivos());
             renderizar();
         } catch (error) {
             movimientos = [];
@@ -269,7 +272,6 @@
     function construirCuerpo() {
         var descripcion = nodos.descripcion.value.trim();
         return {
-            id_usuario: App.usuarioActivo(),
             id_categoria: Number(nodos.categoria.value),
             tipo: nodos.tipo.value,
             monto: Number(nodos.monto.value).toFixed(2),
@@ -325,7 +327,7 @@
         }
         nodos.botonConfirmarEliminar.disabled = true;
         try {
-            await Api.movimientos.eliminar(idPorEliminar, App.usuarioActivo());
+            await Api.movimientos.eliminar(idPorEliminar);
             UI.cerrarDialogo(nodos.dialogoConfirmar);
             UI.notificar("Movimiento eliminado correctamente.", "exito");
             await App.refrescarDatosDependientes();
@@ -369,14 +371,14 @@
             UI.mostrarErrorFormulario(nodos.errorFiltros, "La fecha inicial no puede ser posterior a la fecha final.");
             return;
         }
-        cargar(App.usuarioActivo());
+        cargar();
     }
 
     function alLimpiarFiltros() {
         UI.limpiarErrorFormulario(nodos.errorFiltros);
         // El reset del formulario se aplica después del evento actual.
         window.setTimeout(function () {
-            cargar(App.usuarioActivo());
+            cargar();
         }, 0);
     }
 

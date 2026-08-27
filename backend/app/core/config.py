@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 from dotenv import load_dotenv
@@ -33,6 +34,50 @@ class Settings:
     CORS_ORIGINS: List[str] = field(default_factory=lambda: Settings._parse_cors_origins(
         os.getenv("CORS_ORIGINS", '["http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:8000"]')
     ))
+
+    # -------------------------------------------------------------------------
+    # Autenticación JWT
+    # -------------------------------------------------------------------------
+    # SECRET_KEY firma los tokens: quien la conozca puede emitir tokens válidos
+    # para cualquier usuario. Por eso NUNCA se escribe en el repositorio.
+    #
+    # En desarrollo, si la variable no está definida, se genera una clave
+    # aleatoria distinta en cada arranque: la aplicación funciona sin
+    # configuración previa y, de paso, los tokens caducan al reiniciar. En
+    # producción esto sería un error grave (cada réplica firmaría con una clave
+    # distinta), así que validar_produccion() lo impide explícitamente.
+    SECRET_KEY: str = field(default_factory=lambda: os.getenv("SECRET_KEY") or secrets.token_urlsafe(64))
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+
+    @property
+    def SECRET_KEY_ES_EFIMERA(self) -> bool:
+        """True cuando la clave se generó al vuelo por no estar configurada."""
+        return not os.getenv("SECRET_KEY")
+
+    def validar_produccion(self) -> List[str]:
+        """
+        Comprueba los requisitos que solo son exigibles fuera de desarrollo.
+
+        Devuelve la lista de problemas encontrados (vacía si todo es correcto).
+        Se invoca al arrancar la aplicación.
+        """
+        problemas: List[str] = []
+        if self.APP_ENV.lower() != "production":
+            return problemas
+
+        if self.SECRET_KEY_ES_EFIMERA:
+            problemas.append(
+                "SECRET_KEY no está definida: en producción es obligatoria y debe ser estable "
+                "entre reinicios y réplicas."
+            )
+        elif len(self.SECRET_KEY) < 32:
+            problemas.append("SECRET_KEY es demasiado corta: se recomiendan 64 caracteres o más.")
+
+        if not self.DB_PASSWORD:
+            problemas.append("DB_PASSWORD está vacía en producción.")
+
+        return problemas
 
     @staticmethod
     def _parse_cors_origins(raw: str) -> List[str]:

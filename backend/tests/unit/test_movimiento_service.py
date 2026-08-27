@@ -10,14 +10,13 @@ from app.services.movimiento_service import MovimientoService
 def test_service_crear_ingreso_valido(movimiento_service: MovimientoService):
     """1. Crear ingreso válido."""
     payload = MovimientoCreate(
-        id_usuario=1,
         id_categoria=1,  # Categoría 'Salario' (ingreso)
         tipo="ingreso",
         monto=Decimal("2500000.00"),
         fecha=date(2026, 6, 1),
         descripcion="Pago mensual nómina",
     )
-    res = movimiento_service.crear_movimiento(payload)
+    res = movimiento_service.crear_movimiento(payload, id_usuario=1)
     assert res.id_movimiento > 0
     assert res.id_usuario == 1
     assert res.id_categoria == 1
@@ -30,14 +29,13 @@ def test_service_crear_ingreso_valido(movimiento_service: MovimientoService):
 def test_service_crear_gasto_valido(movimiento_service: MovimientoService):
     """2. Crear gasto válido."""
     payload = MovimientoCreate(
-        id_usuario=1,
         id_categoria=2,  # Categoría 'Alimentación' (gasto)
         tipo="gasto",
         monto=Decimal("320000.00"),
         fecha=date(2026, 6, 5),
         descripcion="Mercado quincenal",
     )
-    res = movimiento_service.crear_movimiento(payload)
+    res = movimiento_service.crear_movimiento(payload, id_usuario=1)
     assert res.id_movimiento > 0
     assert res.categoria == "Alimentación"
     assert res.tipo == "gasto"
@@ -45,30 +43,33 @@ def test_service_crear_gasto_valido(movimiento_service: MovimientoService):
 
 
 def test_service_crear_movimiento_usuario_inexistente(movimiento_service: MovimientoService):
-    """6. Rechazar usuario inexistente (404)."""
+    """
+    6. Rechazar usuario inexistente (404).
+
+    El usuario ya no viaja en el DTO sino como argumento del servicio, que es
+    lo que la ruta rellena a partir del token. La validación sigue existiendo.
+    """
     payload = MovimientoCreate(
-        id_usuario=999,
         id_categoria=1,
         tipo="ingreso",
         monto=Decimal("100000.00"),
         fecha=date(2026, 6, 1),
     )
     with pytest.raises(EntityNotFoundException) as exc:
-        movimiento_service.crear_movimiento(payload)
+        movimiento_service.crear_movimiento(payload, id_usuario=999)
     assert "El usuario con ID 999 no existe" in str(exc.value.message)
 
 
 def test_service_crear_movimiento_categoria_inexistente(movimiento_service: MovimientoService):
     """7. Rechazar categoría inexistente (404)."""
     payload = MovimientoCreate(
-        id_usuario=1,
         id_categoria=999,
         tipo="ingreso",
         monto=Decimal("100000.00"),
         fecha=date(2026, 6, 1),
     )
     with pytest.raises(EntityNotFoundException) as exc:
-        movimiento_service.crear_movimiento(payload)
+        movimiento_service.crear_movimiento(payload, id_usuario=1)
     assert "La categoría con ID 999 no existe" in str(exc.value.message)
 
 
@@ -82,14 +83,13 @@ def test_service_crear_movimiento_categoria_otro_usuario(
 
     # Intentar que usuario 1 use la categoría de usuario 2
     payload = MovimientoCreate(
-        id_usuario=1,
         id_categoria=cat_u2["id_categoria"],
         tipo="ingreso",
         monto=Decimal("50000.00"),
         fecha=date(2026, 6, 1),
     )
     with pytest.raises(ValidationException) as exc:
-        movimiento_service.crear_movimiento(payload)
+        movimiento_service.crear_movimiento(payload, id_usuario=1)
     assert "no pertenece al usuario" in str(exc.value.message)
 
 
@@ -97,14 +97,13 @@ def test_service_crear_movimiento_incoherencia_tipo_categoria(movimiento_service
     """9. Rechazar incoherencia entre tipo de movimiento y tipo de categoría."""
     # Categoría 2 es 'Alimentación' (gasto). Intentar registrarla como 'ingreso'
     payload = MovimientoCreate(
-        id_usuario=1,
         id_categoria=2,
         tipo="ingreso",  # Mismatch con gasto
         monto=Decimal("50000.00"),
         fecha=date(2026, 6, 1),
     )
     with pytest.raises(ValidationException) as exc:
-        movimiento_service.crear_movimiento(payload)
+        movimiento_service.crear_movimiento(payload, id_usuario=1)
     assert "Incoherencia de tipo" in str(exc.value.message)
 
 
@@ -112,14 +111,14 @@ def test_service_listar_movimientos_y_filtros(movimiento_service: MovimientoServ
     """10-15. Listado y filtros de movimientos."""
     # Insertar 3 movimientos con fechas distintas
     movimiento_service.crear_movimiento(MovimientoCreate(
-        id_usuario=1, id_categoria=1, tipo="ingreso", monto=Decimal("1000.00"), fecha=date(2026, 1, 10)
-    ))
+        id_categoria=1, tipo="ingreso", monto=Decimal("1000.00"), fecha=date(2026, 1, 10)
+    ), id_usuario=1)
     movimiento_service.crear_movimiento(MovimientoCreate(
-        id_usuario=1, id_categoria=2, tipo="gasto", monto=Decimal("200.00"), fecha=date(2026, 2, 15)
-    ))
+        id_categoria=2, tipo="gasto", monto=Decimal("200.00"), fecha=date(2026, 2, 15)
+    ), id_usuario=1)
     movimiento_service.crear_movimiento(MovimientoCreate(
-        id_usuario=1, id_categoria=2, tipo="gasto", monto=Decimal("300.00"), fecha=date(2026, 3, 20)
-    ))
+        id_categoria=2, tipo="gasto", monto=Decimal("300.00"), fecha=date(2026, 3, 20)
+    ), id_usuario=1)
 
     # Listar todos
     todos = movimiento_service.listar_movimientos(1)
@@ -151,20 +150,20 @@ def test_service_listar_movimientos_rango_invalido(movimiento_service: Movimient
 def test_service_actualizar_movimiento(movimiento_service: MovimientoService):
     """17-20. Actualizar movimiento existente y rechazar ajenos o inexistentes."""
     creado = movimiento_service.crear_movimiento(MovimientoCreate(
-        id_usuario=1, id_categoria=2, tipo="gasto", monto=Decimal("150.00"), fecha=date(2026, 6, 1)
-    ))
+        id_categoria=2, tipo="gasto", monto=Decimal("150.00"), fecha=date(2026, 6, 1)
+    ), id_usuario=1)
 
     # Actualizar monto y fecha
     act = movimiento_service.actualizar_movimiento(
         id_movimiento=creado.id_movimiento,
         data=MovimientoUpdate(
-            id_usuario=1,
             id_categoria=2,
             tipo="gasto",
             monto=Decimal("180.00"),
             fecha=date(2026, 6, 2),
             descripcion="Ajuste de compra",
-        )
+        ),
+        id_usuario=1,
     )
     assert act.monto == Decimal("180.00")
     assert act.fecha == date(2026, 6, 2)
@@ -174,19 +173,20 @@ def test_service_actualizar_movimiento(movimiento_service: MovimientoService):
     with pytest.raises(EntityNotFoundException):
         movimiento_service.actualizar_movimiento(
             id_movimiento=9999,
-            data=MovimientoUpdate(id_usuario=1, id_categoria=2, tipo="gasto", monto=Decimal("100.00"), fecha=date(2026, 6, 1))
+            data=MovimientoUpdate(id_categoria=2, tipo="gasto", monto=Decimal("100.00"), fecha=date(2026, 6, 1)),
+            id_usuario=1,
         )
 
 
 def test_service_eliminar_movimiento(movimiento_service: MovimientoService):
     """21-22. Eliminar movimiento existente y rechazar inexistente."""
     creado = movimiento_service.crear_movimiento(MovimientoCreate(
-        id_usuario=1, id_categoria=1, tipo="ingreso", monto=Decimal("500.00"), fecha=date(2026, 6, 1)
-    ))
+        id_categoria=1, tipo="ingreso", monto=Decimal("500.00"), fecha=date(2026, 6, 1)
+    ), id_usuario=1)
 
-    res = movimiento_service.eliminar_movimiento(creado.id_movimiento)
+    res = movimiento_service.eliminar_movimiento(creado.id_movimiento, id_usuario=1)
     assert "eliminado con éxito" in res.mensaje
 
     # Verificar que ya no existe
     with pytest.raises(EntityNotFoundException):
-        movimiento_service.eliminar_movimiento(creado.id_movimiento)
+        movimiento_service.eliminar_movimiento(creado.id_movimiento, id_usuario=1)

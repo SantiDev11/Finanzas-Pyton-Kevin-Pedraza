@@ -3,10 +3,15 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class CategoriaCreate(BaseModel):
-    """Esquema para la creación de una nueva categoría."""
+    """
+    Esquema para la creación de una nueva categoría.
+
+    No incluye `id_usuario` de forma deliberada: el propietario se toma del
+    token de acceso, nunca del cuerpo de la petición. Si el cliente pudiera
+    enviarlo, podría crear categorías en la cuenta de otro usuario.
+    """
     nombre: str = Field(..., min_length=2, max_length=60, description="Nombre de la categoría")
     tipo: Literal["ingreso", "gasto"] = Field(..., description="Tipo de categoría (ingreso o gasto)")
-    id_usuario: int = Field(..., gt=0, description="Identificador del usuario propietario")
 
     @field_validator("nombre")
     @classmethod
@@ -20,8 +25,7 @@ class CategoriaCreate(BaseModel):
         "json_schema_extra": {
             "example": {
                 "nombre": "Alimentación",
-                "tipo": "gasto",
-                "id_usuario": 1
+                "tipo": "gasto"
             }
         }
     }

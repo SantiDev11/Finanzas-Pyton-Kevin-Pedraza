@@ -6,11 +6,14 @@ from fastapi.testclient import TestClient
 
 from app.core.dependencies import (
     get_analitica_service,
+    get_auth_service,
     get_categoria_service,
     get_movimiento_service,
     get_resumen_service,
     get_usuario_service,
 )
+from app.core.security import crear_token_acceso, hash_password
+from app.services.auth_service import AuthService
 from app.repositories.categoria_repository import CategoriaRepository
 from app.repositories.movimiento_repository import MovimientoRepository
 from app.repositories.usuario_repository import UsuarioRepository
@@ -223,13 +226,29 @@ class InMemoryMovimientoRepository(MovimientoRepository):
         return gastos
 
 
+# Credenciales del usuario semilla (id_usuario = 1) usado por las pruebas.
+# La contraseña se hashea con el bcrypt real para que el login funcione de
+# verdad en los tests, en lugar de simularlo.
+USUARIO_PRUEBA_CORREO = "test@example.com"
+USUARIO_PRUEBA_PASSWORD = "Password123*"
+
+# Segundo usuario (id_usuario = 2), necesario para verificar el aislamiento.
+USUARIO_AJENO_CORREO = "otro@example.com"
+USUARIO_AJENO_PASSWORD = "OtraClave456*"
+
+
 @pytest.fixture
 def fake_usuario_repo() -> InMemoryUsuarioRepository:
     repo = InMemoryUsuarioRepository()
     repo.create(
         nombre="Usuario Prueba",
-        correo="test@example.com",
-        contrasena_hash="$2b$12$eImiTXuWVxfM37uY4JANjOL.88T9qqQadO03p863/H021.282.",
+        correo=USUARIO_PRUEBA_CORREO,
+        contrasena_hash=hash_password(USUARIO_PRUEBA_PASSWORD),
+    )
+    repo.create(
+        nombre="Usuario Ajeno",
+        correo=USUARIO_AJENO_CORREO,
+        contrasena_hash=hash_password(USUARIO_AJENO_PASSWORD),
     )
     return repo
 
@@ -247,6 +266,12 @@ def fake_movimiento_repo(fake_categoria_repo) -> InMemoryMovimientoRepository:
 @pytest.fixture
 def usuario_service(fake_usuario_repo) -> UsuarioService:
     return UsuarioService(usuario_repository=fake_usuario_repo)
+
+
+@pytest.fixture
+def auth_service(fake_usuario_repo) -> AuthService:
+    """Servicio de autenticación sobre el repositorio de usuarios en memoria."""
+    return AuthService(usuario_repository=fake_usuario_repo)
 
 
 @pytest.fixture
@@ -293,12 +318,18 @@ def analitica_service(fake_movimiento_repo, fake_usuario_repo) -> AnaliticaServi
 
 
 @pytest.fixture
-def client(
-    usuario_service, categoria_service, movimiento_service,
+def client_anonimo(
+    usuario_service, auth_service, categoria_service, movimiento_service,
     resumen_service, analitica_service
 ) -> TestClient:
-    """Cliente HTTP con dependencias sobreescritas para pruebas de integración aisladas."""
+    """
+    Cliente HTTP SIN cabecera de autorización.
+
+    Se usa para el registro, el login y para comprobar que los endpoints
+    protegidos rechazan las peticiones sin token.
+    """
     app.dependency_overrides[get_usuario_service] = lambda: usuario_service
+    app.dependency_overrides[get_auth_service] = lambda: auth_service
     app.dependency_overrides[get_categoria_service] = lambda: categoria_service
     app.dependency_overrides[get_movimiento_service] = lambda: movimiento_service
     app.dependency_overrides[get_resumen_service] = lambda: resumen_service
@@ -306,4 +337,52 @@ def client(
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def token_usuario_1() -> str:
+    """JWT válido del usuario semilla (id_usuario = 1)."""
+    token, _ = crear_token_acceso(id_usuario=1, correo=USUARIO_PRUEBA_CORREO)
+    return token
+
+
+@pytest.fixture
+def token_usuario_2() -> str:
+    """JWT válido del segundo usuario (id_usuario = 2), para pruebas de aislamiento."""
+    token, _ = crear_token_acceso(id_usuario=2, correo=USUARIO_AJENO_CORREO)
+    return token
+
+
+@pytest.fixture
+def client(client_anonimo, token_usuario_1) -> TestClient:
+    """
+    Cliente HTTP autenticado como el usuario 1.
+
+    Envía `Authorization: Bearer <token>` en todas las peticiones, que es como
+    trabaja el frontend real. La identidad sale del token: ninguna petición
+    manda ya `id_usuario`.
+    """
+    return _cliente_autenticado(token_usuario_1)
+
+
+@pytest.fixture
+def client_usuario_2(client_anonimo, token_usuario_2) -> TestClient:
+    """
+    Cliente HTTP autenticado como el usuario 2 (el 'intruso' de las pruebas).
+
+    Es una instancia independiente de `client`, no el mismo objeto con otra
+    cabecera: si compartieran cliente, las pruebas de aislamiento no estarían
+    comprobando nada real.
+    """
+    return _cliente_autenticado(token_usuario_2)
+
+
+def _cliente_autenticado(token: str) -> TestClient:
+    """
+    Crea un TestClient con el token indicado.
+
+    Depende de que `client_anonimo` ya haya instalado los overrides de
+    dependencias sobre la aplicación; por eso ambas fixtures lo reciben.
+    """
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
 

@@ -5,8 +5,13 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class MovimientoCreate(BaseModel):
-    """Esquema para la creación de un nuevo movimiento financiero."""
-    id_usuario: int = Field(..., gt=0, description="Identificador del usuario")
+    """
+    Esquema para la creación de un nuevo movimiento financiero.
+
+    No incluye `id_usuario`: el propietario procede del token de acceso. Así el
+    cliente no puede registrar movimientos en la cuenta de otra persona
+    manipulando el cuerpo de la petición.
+    """
     id_categoria: int = Field(..., gt=0, description="Identificador de la categoría")
     tipo: Literal["ingreso", "gasto"] = Field(..., description="Tipo de movimiento ('ingreso' o 'gasto')")
     monto: Decimal = Field(..., gt=Decimal("0.00"), decimal_places=2, max_digits=12, description="Monto del movimiento (positivo)")
@@ -24,7 +29,6 @@ class MovimientoCreate(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "id_usuario": 1,
                 "id_categoria": 3,
                 "tipo": "gasto",
                 "monto": "85000.00",
@@ -36,8 +40,12 @@ class MovimientoCreate(BaseModel):
 
 
 class MovimientoUpdate(BaseModel):
-    """Esquema para la actualización completa de un movimiento existente."""
-    id_usuario: int = Field(..., gt=0, description="Identificador del usuario propietario")
+    """
+    Esquema para la actualización completa de un movimiento existente.
+
+    Tampoco incluye `id_usuario`: la pertenencia se comprueba contra el usuario
+    autenticado del token.
+    """
     id_categoria: int = Field(..., gt=0, description="Identificador de la categoría")
     tipo: Literal["ingreso", "gasto"] = Field(..., description="Tipo de movimiento ('ingreso' o 'gasto')")
     monto: Decimal = Field(..., gt=Decimal("0.00"), decimal_places=2, max_digits=12, description="Monto del movimiento")
@@ -55,7 +63,6 @@ class MovimientoUpdate(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "id_usuario": 1,
                 "id_categoria": 3,
                 "tipo": "gasto",
                 "monto": "95000.00",
