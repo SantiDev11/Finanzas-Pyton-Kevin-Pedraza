@@ -327,13 +327,16 @@ El módulo analítico (`backend/app/analytics/`) procesa exclusivamente datos de
 
 El proyecto cuenta con una cobertura integral de pruebas automatizadas:
 
+## Tests
+
+Ejecuta la suite completa de pruebas automatizadas:
 ```bash
 pytest backend/tests -v
 ```
 
-* **Total de Pruebas:** 171 tests
-* **Resultados:** 171 passed, 0 failed, 1 warning (deprecation menor de Starlette TestClient)
-* **Arquitectura de Tests:** Utiliza dobles de prueba y repositorios en memoria (`FakeUsuarioRepository`, `FakeCategoriaRepository`, `FakeMovimientoRepository`), permitiendo ejecutar toda la suite de forma ultra rápida sin requerir una conexión activa a MySQL.
+* **Total de Pruebas:** 194 tests (100% aprobadas).
+* **Resultados:** 194 passed, 0 failed, 1 warning (deprecation menor de Starlette TestClient).
+* **Arquitectura de Tests:** Utiliza dobles de prueba y repositorios en memoria (`InMemoryUsuarioRepository`, `InMemoryCategoriaRepository`, `InMemoryMovimientoRepository`), permitiendo ejecutar toda la suite de forma ultra rápida sin requerir una conexión activa a MySQL.
 
 ---
 
@@ -356,24 +359,46 @@ El diseño web es 100% adaptable mediante CSS Grid, Flexbox y media queries flui
 
 ---
 
-## Deployment
+## Deployment en Render
 
-> **Estado:** El proyecto está técnicamente preparado y estructurado para su despliegue en la plataforma **Render**, pero se encuentra en estado **local verificado** (sin despliegue activo aún).
+> **Estado:** **Preparado para deployment en Render.**
 
-### Parámetros Técnicos para Render:
+El repositorio está completamente configurado y estructurado para su despliegue en la nube mediante los siguientes servicios:
 
-#### 1. Backend (Render Web Service)
+### 1. Backend → Web Service (Python / FastAPI)
 * **Root Directory:** `backend`
+* **Environment:** `Python 3`
 * **Build Command:** `pip install -r requirements.txt`
 * **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
-* **Variables de Entorno Requeridas:**
-  * `APP_ENV=production`
-  * `DEBUG=false`
-  * `SECRET_KEY=<clave_aleatoria_64_caracteres>`
-  * `CORS_ORIGINS=["https://<tu-frontend>.onrender.com"]`
-  * `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (Apuntando a una base de datos MySQL gestionada externa como Railway, Aiven o Clever Cloud).
+* **Health Check Path:** `GET /`
 
-#### 2. Frontend (Render Static Site)
+#### Variables de Entorno del Backend en Render:
+* `APP_ENV=production`
+* `DEBUG=false`
+* `SECRET_KEY=<clave_aleatoria_estable_minimo_64_caracteres>`
+* `CORS_ORIGINS=["https://<tu-frontend>.onrender.com"]`
+* `ACCESS_TOKEN_EXPIRE_MINUTES=60`
+* `DB_HOST=<host_mysql_remoto>`
+* `DB_PORT=<puerto_mysql_remoto>`
+* `DB_USER=<usuario_mysql>`
+* `DB_PASSWORD=<contrasena_mysql>`
+* `DB_NAME=<nombre_base_datos_mysql>`
+
+### 2. Frontend → Static Site
 * **Publish Directory:** `frontend`
-* **Build Command:** *(dejar en blanco, HTML/CSS/JS puro)*
-* **Configuración:** Ajustar `URL_API_POR_DEFECTO` en `frontend/js/config.js` con la URL del Web Service de Render.
+* **Build Command:** *(dejar vacío, HTML/CSS/JS nativo)*
+
+### 3. Conexión Backend ↔ Frontend
+* **URL del backend:** Se obtiene al crear el Web Service (ej: `https://finanzas-api.onrender.com`).
+* **URL del frontend:** Se obtiene al crear el Static Site (ej: `https://finanzas-app.onrender.com`).
+* **Configuración en el cliente:** Se configura en `frontend/js/config.js` (`URL_API_POR_DEFECTO`) o mediante `<meta name="api-base-url" content="https://finanzas-api.onrender.com">` en `index.html` y `dashboard.html`.
+* **Configuración CORS:** La URL pública del frontend se añade a la variable `CORS_ORIGINS` del backend en Render.
+
+### 4. Base de Datos MySQL
+* Alojada en un servicio compatible con MySQL 8.0 (ej: Aiven, Railway, TiDB o Clever Cloud).
+* Inicialización ejecutando:
+  ```bash
+  mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p < database/schema.sql
+  mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p < database/seed.sql
+  ```
+

@@ -20,6 +20,9 @@
     var URL_API_POR_DEFECTO = "http://127.0.0.1:8000";
 
     function leerUrlBase() {
+        if (typeof global.API_BASE_URL === "string" && global.API_BASE_URL.trim()) {
+            return global.API_BASE_URL.trim().replace(/\/+$/, "");
+        }
         var meta = document.querySelector('meta[name="api-base-url"]');
         var valor = meta && meta.content ? meta.content.trim() : "";
         var url = valor || URL_API_POR_DEFECTO;
