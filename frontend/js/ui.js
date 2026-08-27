@@ -12,8 +12,27 @@
 
     var CONFIG = App.CONFIG;
 
-    /* Un único formateador numérico con dos decimales, reutilizado tanto para
-       importes como para valores estadísticos (Z-Score). */
+    /**
+     * Formateador monetario de toda la aplicación: peso colombiano.
+     *
+     * Se usa currencyDisplay "code" para que el importe se muestre siempre
+     * como «COP 1.500.000,00» y nunca con el símbolo «$», que se confundiría
+     * con el dólar. Se conservan dos decimales porque la columna `monto` de
+     * MySQL es DECIMAL(12,2): redondear a pesos enteros mostraría una cifra
+     * distinta de la almacenada.
+     *
+     * El formato es solo presentación: lo que viaja a la API sigue siendo un
+     * número sin separadores ni símbolos.
+     */
+    var formateadorMoneda = new Intl.NumberFormat(CONFIG.LOCALIZACION, {
+        style: "currency",
+        currency: CONFIG.MONEDA,
+        currencyDisplay: "code",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+    /* Formateador numérico simple, sin moneda, para valores estadísticos. */
     var formateadorDecimal = new Intl.NumberFormat(CONFIG.LOCALIZACION, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -42,10 +61,10 @@
         return Number.isFinite(numero) ? numero : null;
     }
 
-    /** Formatea un importe monetario. Devuelve "—" si el valor no es numérico. */
+    /** Formatea un importe en pesos colombianos. "—" si no es numérico. */
     function formatearImporte(valor) {
         var numero = aNumero(valor);
-        return numero === null ? "—" : "$ " + formateadorDecimal.format(numero);
+        return numero === null ? "—" : formateadorMoneda.format(numero);
     }
 
     /** Formatea un número decimal simple (por ejemplo un Z-Score). */

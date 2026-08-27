@@ -166,3 +166,41 @@ body {
     font-size: var(--texto-xs);
     margin-top: var(--espacio-1);
 }
+
+/* --- Pantalla de acceso ---------------------------------------------------
+   Es la primera pantalla de la aplicación y ocupa el alto disponible: el
+   panel solo aparece cuando el flujo de acceso ha fijado un usuario. */
+.acceso {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--espacio-4);
+    width: 100%;
+    padding: var(--espacio-5) var(--espacio-4);
+}
+
+.acceso__pie {
+    max-width: 34rem;
+    text-align: center;
+    font-size: var(--texto-xs);
+    color: var(--color-texto-suave);
+}
+
+/* --- Barra de sesión de la cabecera --- */
+.sesion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-3);
+}
+
+.sesion__usuario {
+    font-size: var(--texto-sm);
+    color: var(--color-texto-suave);
+}
+
+.sesion__usuario strong {
+    color: var(--color-texto);
+}

@@ -44,7 +44,8 @@ finanzas-personales/
 │   ├── requirements.txt     # Dependencias de Python
 │   └── main.py              # Punto de entrada de FastAPI
 ├── frontend/
-│   ├── index.html           # Estructura semántica HTML5 (única página)
+│   ├── index.html           # Página de acceso: inicio de sesión y registro
+│   ├── dashboard.html       # Panel: movimientos, categorías, resumen y análisis
 │   ├── css/
 │   │   ├── reset.css        # Normalización mínima del navegador
 │   │   ├── variables.css    # Design tokens (color, espaciado, tipografía)
@@ -54,8 +55,10 @@ finanzas-personales/
 │   ├── js/
 │   │   ├── config.js        # Configuración única (URL de la API, rutas)
 │   │   ├── api.js           # Capa centralizada de fetch y errores
-│   │   ├── ui.js            # Formateo, estados de UI, diálogos y avisos
-│   │   ├── app.js           # Arranque, usuario activo y navegación
+│   │   ├── ui.js            # Formateo (COP), estados de UI, diálogos y avisos
+│   │   ├── sesion.js        # Sesión compartida por las dos páginas
+│   │   ├── login.js         # Lógica de index.html (acceso y registro)
+│   │   ├── app.js           # Lógica de dashboard.html (guardián y navegación)
 │   │   ├── dashboard.js     # Vista principal (panel)
 │   │   ├── movimientos.js   # CRUD y filtros de movimientos
 │   │   ├── categorias.js    # Alta y consulta de categorías
@@ -172,24 +175,26 @@ cd frontend
 python -m http.server 5500 --bind 127.0.0.1
 ```
 
-Y abre [http://127.0.0.1:5500/index.html](http://127.0.0.1:5500/index.html).
+Y abre [http://127.0.0.1:5500/index.html](http://127.0.0.1:5500/index.html),
+que es la página de acceso.
 
 > Con la extensión **Live Server** de VS Code (puerto 5500 por defecto) funciona
 > igual: basta con abrir `frontend/index.html` con *Open with Live Server*.
 
 ### 3. Configuración de la API
 
-La URL de la API se declara **en un único lugar**, la etiqueta `<meta>` de
-`frontend/index.html`:
+La URL de la API se declara **en un único lugar** de todo el frontend, la
+primera constante de `frontend/js/config.js`, que comparten las dos páginas:
 
-```html
-<meta name="api-base-url" content="http://127.0.0.1:8000">
+```js
+var URL_API_POR_DEFECTO = "http://127.0.0.1:8000";
 ```
 
-`js/config.js` la lee al arrancar y el resto del código consume esa
-configuración a través de `js/api.js`. Para apuntar a otro entorno (por ejemplo
-la URL pública de Render) basta con cambiar ese `content`; no hay ninguna otra
-URL de API repartida por los archivos.
+El resto del código la consume a través de `js/api.js`. Para apuntar a otro
+entorno (por ejemplo la URL pública de Render) basta con cambiar esa línea; no
+hay ninguna otra URL de API repartida por los archivos. Opcionalmente, una
+página puede sobrescribirla sin tocar el JavaScript añadiendo
+`<meta name="api-base-url" content="...">` en su `<head>`.
 
 El frontend **no contiene ningún secreto**: no maneja claves de API, tokens ni
 credenciales de MySQL. Solo conoce la URL pública del backend.
@@ -205,14 +210,64 @@ CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:5500","http://localhost:
 
 Si sirves el frontend en otro puerto, añádelo a esa lista en tu `.env`.
 
-### 5. Mecanismo de usuario
+### 5. Acceso y mecanismo de usuario
 
-El backend no tiene sesiones ni autenticación: cada endpoint identifica al
-propietario de los datos con el parámetro `id_usuario`. El frontend respeta ese
-mecanismo tal cual — el campo *Usuario activo (ID)* de la cabecera fija el
-identificador y se recuerda en `localStorage`. El botón *Registrar usuario*
-utiliza el endpoint existente `POST /api/usuarios` y adopta el ID devuelto. No
-hay login, ni JWT, ni tokens.
+El frontend son **dos páginas**:
+
+| Página | Contenido |
+|---|---|
+| `index.html` | Acceso: formularios de inicio de sesión y de registro. Es el punto de entrada. |
+| `dashboard.html` | Toda la lógica del proyecto: panel, movimientos, categorías, resumen y análisis. |
+
+`dashboard.html` no se muestra sin sesión: al cargar comprueba la sesión, y si
+no hay ninguna válida redirige a `index.html`. A la inversa, `index.html`
+continúa automáticamente al panel cuando ya existe una sesión válida.
+
+* **Iniciar sesión** — se introduce el identificador de usuario y el frontend
+  comprueba contra MySQL, a través de la API, que ese usuario existe (los
+  endpoints responden `404` cuando no es así). Al entrar, se salta a
+  `dashboard.html` y todas las vistas trabajan exclusivamente con ese
+  `id_usuario`.
+* **Crear cuenta** — usa el endpoint existente `POST /api/usuarios`; la API
+  cifra la contraseña con bcrypt y devuelve el identificador, con el que se
+  entra directamente al panel.
+* **Cerrar sesión** — descarta el identificador y vuelve a `index.html`.
+
+La sesión se guarda en `sessionStorage` y contiene **solo el identificador**:
+nunca el correo ni la contraseña. Al cerrar la pestaña, la sesión termina y
+vuelve a exigirse el acceso; al recargarla, el identificador se revalida contra
+el backend antes de restaurar la sesión.
+
+> **Limitación conocida.** La API actual expone únicamente `POST /api/usuarios`;
+> **no existe ningún endpoint de inicio de sesión**, por lo que el frontend no
+> puede verificar correo y contraseña. La pantalla de acceso lo indica de forma
+> explícita y no solicita una contraseña que nadie podría comprobar. No se ha
+> implementado JWT, OAuth ni ningún esquema de tokens, ni se ha modificado el
+> backend. El endpoint que haría falta se describe al final de esta sección.
+
+**Endpoint necesario para un login completo (pendiente de aprobación):**
+
+```text
+POST /api/usuarios/login
+Body:      {"correo": str, "contrasena": str}
+Respuesta: 200 {"id_usuario": int, "nombre": str, "correo": str}
+           401 credenciales inválidas
+```
+
+El backend ya tiene todas las piezas internas (`UsuarioRepository.get_by_email`
+y `core.security.verify_password`); solo faltaría la ruta que las exponga.
+
+### 6. Moneda
+
+Toda la interfaz muestra los importes en **pesos colombianos**, con
+`Intl.NumberFormat("es-CO", { style: "currency", currency: "COP",
+currencyDisplay: "code" })`, definido una sola vez en `js/ui.js`. El resultado
+es `COP 1.500.000,00`: nunca se usa el símbolo `$`, ni `USD`, ni `US$`.
+
+Es solo formato de presentación. Lo que se envía a la API sigue siendo un
+número sin separadores ni símbolos, y la columna `monto` de MySQL continúa
+siendo `DECIMAL(12,2)`. Por eso se conservan los dos decimales: redondear a
+pesos enteros mostraría una cifra distinta de la almacenada.
 
 ---
 

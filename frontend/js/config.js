@@ -1,10 +1,14 @@
 /**
  * config.js — Configuración única del frontend.
  *
- * La URL de la API se declara en un solo sitio: la etiqueta
- * <meta name="api-base-url"> de index.html. Para apuntar a otro entorno
- * (por ejemplo la URL pública de Render) basta con cambiar ese atributo;
- * ningún otro archivo del proyecto contiene URLs de la API.
+ * La URL de la API se declara en un solo sitio: la constante
+ * URL_API_POR_DEFECTO de este archivo, que comparten las dos páginas del
+ * frontend (index.html y dashboard.html). Para apuntar a otro entorno —por
+ * ejemplo la URL pública de Render— basta con cambiar esa línea; ningún otro
+ * archivo del proyecto contiene URLs de la API.
+ *
+ * Como alternativa, una página puede sobrescribirla sin tocar el JavaScript
+ * añadiendo <meta name="api-base-url" content="..."> en su <head>.
  *
  * Aquí no se guarda ningún secreto: ni contraseñas, ni claves de API, ni
  * credenciales de base de datos. El frontend solo conoce la URL pública.
@@ -37,14 +41,14 @@
             ANOMALIAS: "/api/analitica/anomalias"
         }),
 
-        /** Clave de almacenamiento local del usuario activo (solo su ID). */
-        CLAVE_USUARIO: "finanzas.id_usuario",
-
-        /** Identificador de usuario con el que arranca la aplicación. */
-        ID_USUARIO_POR_DEFECTO: 1,
-
         /** Localización usada para formatear importes y fechas. */
         LOCALIZACION: "es-CO",
+
+        /** Moneda de presentación: peso colombiano (ISO 4217). */
+        MONEDA: "COP",
+
+        /** Clave de sesión: se guarda solo el id del usuario autenticado. */
+        CLAVE_SESION: "finanzas.sesion",
 
         /** Número de movimientos mostrados en el panel. */
         MOVIMIENTOS_EN_PANEL: 5

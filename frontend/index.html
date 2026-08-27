@@ -4,16 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description"
-        content="Aplicación de finanzas personales: registro de ingresos y gastos, resumen mensual y análisis predictivo.">
+    <meta name="description" content="Acceso a la aplicación de finanzas personales: inicio de sesión y registro de usuarios.">
     <meta name="color-scheme" content="light dark">
-    <!--
-        Única configuración de la URL de la API en todo el frontend.
-        Para desplegar contra otro entorno (por ejemplo Render) basta con
-        cambiar el valor de este atributo content, sin tocar el JavaScript.
-    -->
-    <meta name="api-base-url" content="http://127.0.0.1:8000">
-    <title>Finanzas Personales</title>
+    <title>Acceso — Finanzas Personales</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/variables.css">
@@ -23,508 +16,115 @@
 </head>
 
 <body>
-    <a class="salto-contenido" href="#contenido">Saltar al contenido principal</a>
+    <main class="acceso" id="pantalla-acceso" aria-labelledby="titulo-acceso">
+        <section class="acceso__tarjeta" aria-labelledby="titulo-acceso">
+            <header class="acceso__cabecera">
+                <img class="acceso__icono" src="assets/favicon.svg" alt="" width="48" height="48">
+                <h1 id="titulo-acceso">Finanzas Personales</h1>
+                <p class="acceso__lema">Controla tus ingresos y gastos en pesos colombianos.</p>
+            </header>
 
-    <header class="cabecera">
-        <div class="cabecera__barra">
-            <h1 class="marca">
-                <img class="marca__icono" src="assets/favicon.svg" alt="" width="28" height="28">
-                Finanzas Personales
-            </h1>
-
-            <form class="selector-usuario" id="form-usuario" novalidate>
-                <div class="campo campo--compacto">
-                    <label for="entrada-usuario">Usuario activo (ID)</label>
-                    <input type="number" id="entrada-usuario" name="id_usuario" min="1" step="1" inputmode="numeric"
-                        required aria-describedby="ayuda-usuario">
-                </div>
-                <button type="submit" class="boton boton--primario">Aplicar</button>
-                <button type="button" class="boton boton--sutil" id="boton-abrir-registro">Registrar usuario</button>
-                <p class="campo__ayuda" id="ayuda-usuario">
-                    Todas las consultas se realizan sobre este identificador de usuario.
-                </p>
-            </form>
-        </div>
-
-        <nav class="navegacion" aria-label="Secciones de la aplicación">
-            <ul class="navegacion__lista">
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="panel"
-                        aria-current="page">Panel</button>
-                </li>
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="movimientos">Movimientos</button>
-                </li>
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="categorias">Categorías</button>
-                </li>
-                <li>
-                    <button type="button" class="navegacion__enlace" data-vista="analisis">Análisis</button>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <main class="contenido" id="contenido" tabindex="-1">
-
-        <!-- ================================================================
-             VISTA: PANEL / DASHBOARD
-             ================================================================ -->
-        <section class="vista" id="vista-panel" aria-labelledby="titulo-panel">
-            <h2 id="titulo-panel">Panel financiero</h2>
-            <p class="vista__introduccion">
-                Situación del periodo seleccionado. Todos los importes provienen directamente de la API.
-            </p>
-
-            <section class="tarjeta" aria-labelledby="titulo-resumen">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-resumen">Resumen mensual</h3>
-                    <form class="formulario-linea" id="form-resumen" novalidate>
-                        <div class="campo campo--compacto">
-                            <label for="entrada-mes">Mes</label>
-                            <input type="month" id="entrada-mes" name="mes" required>
-                        </div>
-                        <button type="submit" class="boton boton--primario">Consultar</button>
-                    </form>
-                </div>
-
-                <p class="estado estado--cargando" id="estado-resumen" role="status" aria-live="polite">Cargando
-                    resumen…</p>
-
-                <ul class="rejilla-indicadores" id="indicadores-resumen" hidden>
+            <nav aria-label="Formularios de acceso">
+                <ul class="pestanas__lista">
                     <li>
-                        <article class="indicador indicador--ingreso" aria-labelledby="titulo-ingresos">
-                            <h4 id="titulo-ingresos">Total ingresos</h4>
-                            <p class="indicador__valor" id="valor-ingresos">—</p>
-                            <p class="indicador__nota">Suma de movimientos de tipo ingreso.</p>
-                        </article>
+                        <button type="button" class="pestanas__boton" data-panel="ingreso"
+                            aria-current="page">Iniciar sesión</button>
                     </li>
                     <li>
-                        <article class="indicador indicador--gasto" aria-labelledby="titulo-gastos">
-                            <h4 id="titulo-gastos">Total gastos</h4>
-                            <p class="indicador__valor" id="valor-gastos">—</p>
-                            <p class="indicador__nota">Suma de movimientos de tipo gasto.</p>
-                        </article>
-                    </li>
-                    <li>
-                        <article class="indicador indicador--balance" aria-labelledby="titulo-balance">
-                            <h4 id="titulo-balance">Balance</h4>
-                            <p class="indicador__valor" id="valor-balance">—</p>
-                            <p class="indicador__nota">Ahorro del periodo calculado por el backend.</p>
-                        </article>
+                        <button type="button" class="pestanas__boton" data-panel="registro">Crear cuenta</button>
                     </li>
                 </ul>
+            </nav>
 
-                <figure class="proporcion" id="proporcion-resumen" hidden>
-                    <figcaption>Proporción visual entre ingresos y gastos del periodo</figcaption>
-                    <div class="proporcion__barra">
-                        <span class="proporcion__parte proporcion__parte--ingreso" id="barra-ingresos"></span>
-                        <span class="proporcion__parte proporcion__parte--gasto" id="barra-gastos"></span>
-                    </div>
-                    <p class="proporcion__leyenda">
-                        <span class="punto punto--ingreso" aria-hidden="true"></span> Ingresos
-                        <span class="punto punto--gasto" aria-hidden="true"></span> Gastos
-                    </p>
-                </figure>
-            </section>
+            <!-- Panel: iniciar sesión -->
+            <section class="acceso__panel" id="panel-ingreso" aria-labelledby="titulo-ingreso">
+                <h2 id="titulo-ingreso" class="visualmente-oculto">Iniciar sesión</h2>
 
-            <div class="rejilla-doble">
-                <section class="tarjeta" aria-labelledby="titulo-ultimos">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-ultimos">Últimos movimientos</h3>
-                    </div>
-                    <p class="estado estado--cargando" id="estado-ultimos" role="status" aria-live="polite">Cargando
-                        movimientos…</p>
-                    <div class="tabla-desplazable">
-                        <table class="tabla tabla--apilable" id="tabla-ultimos" hidden>
-                            <caption class="tabla__titulo">Cinco movimientos más recientes del usuario activo</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Fecha</th>
-                                    <th scope="col">Categoría</th>
-                                    <th scope="col">Tipo</th>
-                                    <th scope="col" class="celda--numerica">Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cuerpo-ultimos"></tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <section class="tarjeta" aria-labelledby="titulo-prediccion-panel">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-prediccion-panel">Gasto estimado del próximo mes</h3>
-                    </div>
-                    <p class="estado estado--cargando" id="estado-prediccion-panel" role="status"
-                        aria-live="polite">Calculando predicción…</p>
-                    <article class="prediccion" id="prediccion-panel" hidden>
-                        <p class="prediccion__mes" id="panel-prediccion-mes">—</p>
-                        <p class="prediccion__valor" id="panel-prediccion-valor">—</p>
-                        <p class="prediccion__detalle" id="panel-prediccion-confianza">—</p>
-                    </article>
-                </section>
-            </div>
-        </section>
-
-        <!-- ================================================================
-             VISTA: MOVIMIENTOS
-             ================================================================ -->
-        <section class="vista" id="vista-movimientos" aria-labelledby="titulo-movimientos" hidden>
-            <h2 id="titulo-movimientos">Movimientos</h2>
-            <p class="vista__introduccion">
-                Registro, consulta, edición y eliminación de ingresos y gastos.
-            </p>
-
-            <section class="tarjeta" aria-labelledby="titulo-filtros">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-filtros">Filtros de búsqueda</h3>
-                    <button type="button" class="boton boton--primario" id="boton-nuevo-movimiento">
-                        Nuevo movimiento
-                    </button>
-                </div>
-
-                <form class="formulario formulario--filtros" id="form-filtros" novalidate>
+                <form class="formulario" id="form-ingreso" novalidate>
                     <fieldset>
-                        <legend>Acotar el listado de movimientos</legend>
+                        <legend>Identifícate para entrar al panel</legend>
                         <div class="formulario__campos">
-                            <div class="campo">
-                                <label for="filtro-desde">Desde</label>
-                                <input type="date" id="filtro-desde" name="desde">
-                            </div>
-                            <div class="campo">
-                                <label for="filtro-hasta">Hasta</label>
-                                <input type="date" id="filtro-hasta" name="hasta">
-                            </div>
-                            <div class="campo">
-                                <label for="filtro-categoria">Categoría</label>
-                                <select id="filtro-categoria" name="categoria">
-                                    <option value="">Todas las categorías</option>
-                                </select>
+                            <div class="campo campo--ancho-completo">
+                                <label for="ingreso-id">Identificador de usuario</label>
+                                <input type="number" id="ingreso-id" name="id_usuario" min="1" step="1"
+                                    inputmode="numeric" required autocomplete="username"
+                                    aria-describedby="ayuda-ingreso" placeholder="1">
+                                <p class="campo__ayuda" id="ayuda-ingreso">
+                                    El identificador que devolvió la API al registrar la cuenta. Se comprueba
+                                    contra la base de datos antes de entrar.
+                                </p>
                             </div>
                         </div>
-                        <p class="mensaje-error" id="error-filtros" role="alert" hidden></p>
+
+                        <p class="mensaje-error" id="error-ingreso" role="alert" hidden></p>
+
                         <div class="formulario__acciones">
-                            <button type="submit" class="boton boton--primario">Filtrar</button>
-                            <button type="reset" class="boton boton--secundario">Limpiar</button>
+                            <button type="submit" class="boton boton--primario" id="boton-ingresar">Entrar</button>
+                        </div>
+                    </fieldset>
+                </form>
+
+                <aside class="nota nota--aviso" aria-labelledby="titulo-limitacion">
+                    <h3 id="titulo-limitacion">Verificación de contraseña pendiente de backend</h3>
+                    <p>
+                        La API actual solo expone <code>POST /api/usuarios</code>: no existe ningún endpoint
+                        de inicio de sesión, por lo que <strong>el frontend no puede comprobar correo y
+                        contraseña</strong>. Este acceso valida contra MySQL que el usuario exista y aísla
+                        el panel tras el flujo de entrada. Pedir aquí una contraseña que nadie verifica
+                        daría una falsa sensación de seguridad, así que no se solicita.
+                    </p>
+                </aside>
+            </section>
+
+            <!-- Panel: crear cuenta -->
+            <section class="acceso__panel" id="panel-registro" aria-labelledby="titulo-registro" hidden>
+                <h2 id="titulo-registro" class="visualmente-oculto">Crear cuenta</h2>
+
+                <form class="formulario" id="form-registro" novalidate>
+                    <fieldset>
+                        <legend>Datos de la nueva cuenta</legend>
+                        <div class="formulario__campos">
+                            <div class="campo campo--ancho-completo">
+                                <label for="registro-nombre">Nombre completo</label>
+                                <input type="text" id="registro-nombre" name="nombre" minlength="2" maxlength="100"
+                                    required autocomplete="name">
+                            </div>
+                            <div class="campo campo--ancho-completo">
+                                <label for="registro-correo">Correo electrónico</label>
+                                <input type="email" id="registro-correo" name="correo" required autocomplete="email">
+                            </div>
+                            <div class="campo campo--ancho-completo">
+                                <label for="registro-contrasena">Contraseña</label>
+                                <input type="password" id="registro-contrasena" name="contrasena" minlength="8"
+                                    maxlength="128" required autocomplete="new-password"
+                                    aria-describedby="ayuda-contrasena">
+                                <p class="campo__ayuda" id="ayuda-contrasena">
+                                    Mínimo 8 caracteres. Se envía a la API, que la cifra con bcrypt antes de
+                                    guardarla; el navegador no la almacena en ningún momento.
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="mensaje-error" id="error-registro" role="alert" hidden></p>
+
+                        <div class="formulario__acciones">
+                            <button type="submit" class="boton boton--primario">Registrarme y entrar</button>
                         </div>
                     </fieldset>
                 </form>
             </section>
-
-            <section class="tarjeta" aria-labelledby="titulo-listado">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-listado">Listado de movimientos</h3>
-                    <p class="contador" id="contador-movimientos"></p>
-                </div>
-
-                <p class="estado estado--cargando" id="estado-movimientos" role="status" aria-live="polite">Cargando
-                    movimientos…</p>
-
-                <div class="tabla-desplazable">
-                    <table class="tabla tabla--apilable" id="tabla-movimientos" hidden>
-                        <caption class="tabla__titulo">Movimientos del usuario activo ordenados por fecha
-                            descendente</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Fecha</th>
-                                <th scope="col">Categoría</th>
-                                <th scope="col">Tipo</th>
-                                <th scope="col" class="celda--numerica">Monto</th>
-                                <th scope="col">Descripción</th>
-                                <th scope="col">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpo-movimientos"></tbody>
-                    </table>
-                </div>
-            </section>
         </section>
 
-        <!-- ================================================================
-             VISTA: CATEGORÍAS
-             ================================================================ -->
-        <section class="vista" id="vista-categorias" aria-labelledby="titulo-categorias" hidden>
-            <h2 id="titulo-categorias">Categorías</h2>
-            <p class="vista__introduccion">
-                Clasificación de los movimientos del usuario activo.
-            </p>
-
-            <div class="rejilla-doble">
-                <section class="tarjeta" aria-labelledby="titulo-nueva-categoria">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-nueva-categoria">Nueva categoría</h3>
-                    </div>
-
-                    <form class="formulario" id="form-categoria" novalidate>
-                        <fieldset>
-                            <legend>Datos de la categoría</legend>
-                            <div class="formulario__campos">
-                                <div class="campo">
-                                    <label for="categoria-nombre">Nombre</label>
-                                    <input type="text" id="categoria-nombre" name="nombre" minlength="2" maxlength="60"
-                                        required autocomplete="off" placeholder="Alimentación">
-                                </div>
-                                <div class="campo">
-                                    <label for="categoria-tipo">Tipo</label>
-                                    <select id="categoria-tipo" name="tipo" required>
-                                        <option value="gasto">Gasto</option>
-                                        <option value="ingreso">Ingreso</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="mensaje-error" id="error-categoria" role="alert" hidden></p>
-                            <div class="formulario__acciones">
-                                <button type="submit" class="boton boton--primario">Crear categoría</button>
-                            </div>
-                        </fieldset>
-                    </form>
-
-                    <aside class="nota" aria-label="Nota sobre las operaciones disponibles">
-                        <h4>Operaciones disponibles</h4>
-                        <p>
-                            La API expone únicamente creación y consulta de categorías
-                            (<code>POST /api/categorias</code> y <code>GET /api/categorias</code>).
-                            No existen endpoints de edición ni eliminación, por lo que esas acciones
-                            no se ofrecen en la interfaz.
-                        </p>
-                    </aside>
-                </section>
-
-                <section class="tarjeta" aria-labelledby="titulo-listado-categorias">
-                    <div class="tarjeta__cabecera">
-                        <h3 id="titulo-listado-categorias">Categorías registradas</h3>
-                        <p class="contador" id="contador-categorias"></p>
-                    </div>
-
-                    <p class="estado estado--cargando" id="estado-categorias" role="status" aria-live="polite">Cargando
-                        categorías…</p>
-
-                    <div class="tabla-desplazable">
-                        <table class="tabla tabla--apilable" id="tabla-categorias" hidden>
-                            <caption class="tabla__titulo">Categorías asociadas al usuario activo</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col" class="celda--numerica">ID</th>
-                                    <th scope="col">Nombre</th>
-                                    <th scope="col">Tipo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cuerpo-categorias"></tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
-        </section>
-
-        <!-- ================================================================
-             VISTA: ANÁLISIS
-             ================================================================ -->
-        <section class="vista" id="vista-analisis" aria-labelledby="titulo-analisis" hidden>
-            <h2 id="titulo-analisis">Análisis</h2>
-            <p class="vista__introduccion">
-                Resultados del módulo analítico del backend: predicción de gastos y detección de anomalías.
-            </p>
-
-            <section class="tarjeta" aria-labelledby="titulo-prediccion">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-prediccion">Predicción de gastos</h3>
-                    <button type="button" class="boton boton--secundario" id="boton-recargar-analisis">Actualizar</button>
-                </div>
-
-                <p class="estado estado--cargando" id="estado-prediccion" role="status" aria-live="polite">Calculando
-                    predicción…</p>
-
-                <article class="prediccion" id="detalle-prediccion" hidden>
-                    <h4 class="prediccion__mes" id="prediccion-mes">—</h4>
-                    <p class="prediccion__valor" id="prediccion-valor">—</p>
-                    <dl class="lista-datos">
-                        <dt>Confianza</dt>
-                        <dd id="prediccion-confianza">—</dd>
-                        <dt>Meses procesados</dt>
-                        <dd id="prediccion-meses">—</dd>
-                        <dt>Método</dt>
-                        <dd id="prediccion-razon">—</dd>
-                    </dl>
-                </article>
-            </section>
-
-            <section class="tarjeta" aria-labelledby="titulo-anomalias">
-                <div class="tarjeta__cabecera">
-                    <h3 id="titulo-anomalias">Anomalías detectadas</h3>
-                    <p class="contador" id="contador-anomalias"></p>
-                </div>
-
-                <p class="estado estado--cargando" id="estado-anomalias" role="status" aria-live="polite">Analizando
-                    gastos…</p>
-
-                <div class="tabla-desplazable">
-                    <table class="tabla tabla--apilable" id="tabla-anomalias" hidden>
-                        <caption class="tabla__titulo">Gastos atípicos según Z-Score por categoría</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Fecha</th>
-                                <th scope="col" class="celda--numerica">Monto</th>
-                                <th scope="col">Categoría</th>
-                                <th scope="col" class="celda--numerica">Z-Score</th>
-                                <th scope="col">Descripción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpo-anomalias"></tbody>
-                    </table>
-                </div>
-
-                <aside class="nota" aria-label="Nota metodológica">
-                    <h4>Metodología</h4>
-                    <p>
-                        El backend calcula el Z-Score de cada gasto respecto a la media y la desviación
-                        estándar de su propia categoría. Se marca como anomalía todo gasto cuyo
-                        <abbr title="valor absoluto del Z-Score">|Z-Score|</abbr> supera el umbral indicado por la API.
-                    </p>
-                </aside>
-            </section>
-        </section>
+        <footer class="acceso__pie">
+            <p>Los importes se muestran en pesos colombianos (COP) y se calculan íntegramente en el backend.</p>
+        </footer>
     </main>
-
-    <footer class="pie">
-        <p class="pie__texto">
-            Aplicación de Finanzas Personales — Arquitectura por capas (FastAPI + MySQL).
-        </p>
-        <p class="pie__texto pie__texto--suave">
-            Los importes, la predicción y las anomalías se calculan íntegramente en el backend.
-        </p>
-    </footer>
-
-    <!-- ====================================================================
-         DIÁLOGO: ALTA Y EDICIÓN DE MOVIMIENTO
-         ==================================================================== -->
-    <dialog class="dialogo" id="dialogo-movimiento" aria-labelledby="titulo-dialogo-movimiento">
-        <form class="formulario" id="form-movimiento" novalidate>
-            <header class="dialogo__cabecera">
-                <h2 id="titulo-dialogo-movimiento">Nuevo movimiento</h2>
-                <button type="button" class="boton boton--icono" id="boton-cerrar-movimiento"
-                    aria-label="Cerrar formulario">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </header>
-
-            <fieldset>
-                <legend>Datos del movimiento</legend>
-                <div class="formulario__campos">
-                    <div class="campo">
-                        <label for="movimiento-tipo">Tipo</label>
-                        <select id="movimiento-tipo" name="tipo" required>
-                            <option value="gasto">Gasto</option>
-                            <option value="ingreso">Ingreso</option>
-                        </select>
-                    </div>
-                    <div class="campo">
-                        <label for="movimiento-categoria">Categoría</label>
-                        <select id="movimiento-categoria" name="id_categoria" required
-                            aria-describedby="ayuda-categoria"></select>
-                        <p class="campo__ayuda" id="ayuda-categoria">Solo se listan las categorías del tipo
-                            seleccionado.</p>
-                    </div>
-                    <div class="campo">
-                        <label for="movimiento-monto">Monto</label>
-                        <input type="number" id="movimiento-monto" name="monto" min="0.01" step="0.01" required
-                            inputmode="decimal" placeholder="0.00">
-                    </div>
-                    <div class="campo">
-                        <label for="movimiento-fecha">Fecha</label>
-                        <input type="date" id="movimiento-fecha" name="fecha" required>
-                    </div>
-                    <div class="campo campo--ancho-completo">
-                        <label for="movimiento-descripcion">Descripción <span
-                                class="campo__opcional">(opcional)</span></label>
-                        <textarea id="movimiento-descripcion" name="descripcion" rows="2" maxlength="255"
-                            placeholder="Mercado quincenal"></textarea>
-                    </div>
-                </div>
-
-                <p class="mensaje-error" id="error-movimiento" role="alert" hidden></p>
-
-                <div class="formulario__acciones formulario__acciones--dialogo">
-                    <button type="button" class="boton boton--secundario"
-                        id="boton-cancelar-movimiento">Cancelar</button>
-                    <button type="submit" class="boton boton--primario" id="boton-guardar-movimiento">Guardar</button>
-                </div>
-            </fieldset>
-        </form>
-    </dialog>
-
-    <!-- ====================================================================
-         DIÁLOGO: REGISTRO DE USUARIO
-         ==================================================================== -->
-    <dialog class="dialogo" id="dialogo-usuario" aria-labelledby="titulo-dialogo-usuario">
-        <form class="formulario" id="form-registro" novalidate>
-            <header class="dialogo__cabecera">
-                <h2 id="titulo-dialogo-usuario">Registrar usuario</h2>
-                <button type="button" class="boton boton--icono" id="boton-cerrar-registro"
-                    aria-label="Cerrar formulario">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </header>
-
-            <fieldset>
-                <legend>Datos de la cuenta</legend>
-                <div class="formulario__campos">
-                    <div class="campo campo--ancho-completo">
-                        <label for="registro-nombre">Nombre completo</label>
-                        <input type="text" id="registro-nombre" name="nombre" minlength="2" maxlength="100" required
-                            autocomplete="name">
-                    </div>
-                    <div class="campo campo--ancho-completo">
-                        <label for="registro-correo">Correo electrónico</label>
-                        <input type="email" id="registro-correo" name="correo" required autocomplete="email">
-                    </div>
-                    <div class="campo campo--ancho-completo">
-                        <label for="registro-contrasena">Contraseña</label>
-                        <input type="password" id="registro-contrasena" name="contrasena" minlength="8" maxlength="128"
-                            required autocomplete="new-password" aria-describedby="ayuda-contrasena">
-                        <p class="campo__ayuda" id="ayuda-contrasena">
-                            Mínimo 8 caracteres. Se envía a la API, que la cifra con bcrypt; el frontend no la almacena.
-                        </p>
-                    </div>
-                </div>
-
-                <p class="mensaje-error" id="error-registro" role="alert" hidden></p>
-
-                <div class="formulario__acciones formulario__acciones--dialogo">
-                    <button type="button" class="boton boton--secundario" id="boton-cancelar-registro">Cancelar</button>
-                    <button type="submit" class="boton boton--primario">Registrar</button>
-                </div>
-            </fieldset>
-        </form>
-    </dialog>
-
-    <!-- ====================================================================
-         DIÁLOGO: CONFIRMACIÓN DE ELIMINACIÓN
-         ==================================================================== -->
-    <dialog class="dialogo dialogo--estrecho" id="dialogo-confirmar" aria-labelledby="titulo-dialogo-confirmar">
-        <div class="dialogo__contenido">
-            <header class="dialogo__cabecera">
-                <h2 id="titulo-dialogo-confirmar">Eliminar movimiento</h2>
-            </header>
-            <p id="texto-confirmar">¿Deseas eliminar este movimiento de forma permanente?</p>
-            <div class="formulario__acciones formulario__acciones--dialogo">
-                <button type="button" class="boton boton--secundario" id="boton-cancelar-eliminar">Cancelar</button>
-                <button type="button" class="boton boton--peligro" id="boton-confirmar-eliminar">Eliminar</button>
-            </div>
-        </div>
-    </dialog>
-
-    <!-- Región de notificaciones efímeras (contenedor sin valor semántico) -->
-    <div class="notificaciones" id="notificaciones" role="status" aria-live="polite"></div>
 
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
-    <script src="js/categorias.js"></script>
-    <script src="js/resumen.js"></script>
-    <script src="js/movimientos.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/sesion.js"></script>
+    <script src="js/login.js"></script>
 </body>
 
 </html>

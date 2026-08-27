@@ -664,3 +664,104 @@
     border-left-color: var(--color-gasto);
     color: var(--color-gasto);
 }
+
+/* --- Tarjeta de acceso ---------------------------------------------------- */
+.acceso__tarjeta {
+    width: 100%;
+    max-width: 34rem;
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-2);
+    padding: var(--espacio-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.acceso__cabecera {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--espacio-2);
+    text-align: center;
+}
+
+.acceso__icono {
+    width: 3rem;
+    height: 3rem;
+}
+
+.acceso__cabecera h1 {
+    font-size: var(--texto-2xl);
+    letter-spacing: -0.02em;
+}
+
+.acceso__lema {
+    font-size: var(--texto-sm);
+    color: var(--color-texto-suave);
+    max-width: 30ch;
+}
+
+.acceso__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+/* --- Pestañas del acceso --- */
+.pestanas__lista {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--espacio-1);
+    padding: var(--espacio-1);
+    background-color: var(--color-superficie-alt);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+}
+
+.pestanas__boton {
+    width: 100%;
+    min-height: var(--altura-tactil);
+    padding: var(--espacio-2);
+    border-radius: var(--radio-sm);
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    transition: background-color var(--transicion), color var(--transicion);
+}
+
+.pestanas__boton:hover {
+    color: var(--color-texto);
+}
+
+.pestanas__boton[aria-current="page"] {
+    background-color: var(--color-superficie);
+    color: var(--color-primario);
+    box-shadow: var(--sombra-1);
+}
+
+/* --- Nota de aviso (limitación conocida) --- */
+.nota--aviso {
+    border-left-color: var(--color-aviso);
+    background-color: var(--color-aviso-suave);
+    color: var(--color-texto);
+}
+
+.nota--aviso h3 {
+    font-size: var(--texto-sm);
+    margin-bottom: var(--espacio-1);
+}
+
+/* --- Utilidad: contenido solo para lectores de pantalla ------------------- */
+.visualmente-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
