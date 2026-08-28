@@ -17,8 +17,7 @@
 (function (global) {
     "use strict";
 
-    var URL_API_POR_DEFECTO = "http://127.0.0.1:8000";
-
+    var URL_API_POR_DEFECTO = "https://finanzas-pyton-kevin-pedraza.onrender.com";
     function leerUrlBase() {
         if (typeof global.API_BASE_URL === "string" && global.API_BASE_URL.trim()) {
             return global.API_BASE_URL.trim().replace(/\/+$/, "");
